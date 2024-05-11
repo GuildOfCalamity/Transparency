@@ -19,7 +19,7 @@
 
 
 ## 🎛️ Usage
-* This application was intented to be run unpakaged, but I have added checks for running in packaged format as well.
+* This application was intended to be run unpakaged, but I have added checks for running in packaged format as well.
 * Upon first run the `TransparencyConfig.json` settings file will be created. During runtime, these settings can be adjusted from the `ConfigWindow.xaml`
 
 ## 🧾 License/Warranty
