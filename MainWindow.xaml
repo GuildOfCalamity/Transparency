@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="Transparency.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrl="using:Transparency.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Transparency"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Grid
+        x:Name="Content"
+        BorderBrush="{ThemeResource GradientBorderBrush}"
+        BorderThickness="{x:Bind ViewModel.BorderSize, Mode=OneWay}"
+        CornerRadius="6">
+
+        <Grid
+            x:Name="rootGrid"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            CornerRadius="6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="40" />
+            </Grid.RowDefinitions>
+
+            <!--#region [Radial Gauge]-->
+            <ctrl:RadialGauge
+                x:Name="cpuGauge"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                MinWidth="50"
+                MinHeight="50"
+                Margin="20"
+                GaugeFont="{StaticResource SecondaryFont}"
+                IsInteractive="True"
+                Maximum="{x:Bind ViewModel.MaxCPU, Mode=OneWay}"
+                Minimum="0"
+                NeedleBrush="{x:Bind ViewModel.NeedleColor, Mode=OneWay}"
+                NeedleLength="68"
+                Opacity="0.9"
+                ScalePadding="0"
+                ScaleWidth="23"
+                StepSize="1"
+                TickCornerRadius="4"
+                TickLength="12"
+                TickPadding="6"
+                TickSpacing="10"
+                TickWidth="4"
+                TrailBrush="{x:Bind ViewModel.NeedleColor, Mode=OneWay}"
+                Unit="CPU %"
+                Value="{x:Bind ViewModel.CurrentCPU, Mode=OneWay}">
+                <ctrl:RadialGauge.TickBrush>
+                    <SolidColorBrush Opacity="0.65" Color="BurlyWood" />
+                </ctrl:RadialGauge.TickBrush>
+            </ctrl:RadialGauge>
+            <!--#endregion-->
+
+            <!--#region [Controls]-->
+            <Grid x:Name="ctrlGrid" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+                <Button
+                    Grid.Column="0"
+                    Margin="3,0,0,0"
+                    HorizontalAlignment="Left"
+                    Click="Settings_Click"
+                    Foreground="{ThemeResource SystemAccentColorLight2}"
+                    Opacity="0.75"
+                    Style="{ThemeResource SettingsToolbarButton}" />
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="0,0,0,3"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    FontFamily="{ThemeResource PrimaryFont}"
+                    FontSize="{ThemeResource FontSizeMedium}"
+                    Foreground="{ThemeResource SecondaryBrush}"
+                    Text="{x:Bind ViewModel.Status, Mode=OneWay}" />
+                <Button
+                    Grid.Column="2"
+                    MinWidth="20"
+                    Margin="0,0,3,0"
+                    HorizontalAlignment="Right"
+                    Click="ExitButton_Click"
+                    Content="&#10006;"
+                    FontSize="18"
+                    Opacity="0.6"
+                    Style="{ThemeResource ToolbarButton}" />
+            </Grid>
+            <!--#endregion-->
+
+        </Grid>
+    </Grid>
+</Window>
