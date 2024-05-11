@@ -57,7 +57,7 @@ public class MainViewModel : ObservableRecipient
         set => SetProperty(ref _needleColor, value);
     }
 
-    string _status = "Please wait…";
+    string _status = "Loading…";
     public string Status
     {
         get => _status;
