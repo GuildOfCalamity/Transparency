@@ -1,4 +1,6 @@
-﻿using System;
+// Ignore Spelling: Histo
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,11 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.Extensions.DependencyInjection;
 
 using Windows.Win32;
@@ -26,14 +24,11 @@ using Transparency.Services;
 
 using CommunityToolkit.WinUI.Helpers;
 
+
 namespace Transparency;
 
 /// <summary>
-/// Main Window (gauge)
-/// ✖ &#10006; ✔️
-/// ✕ &#x2715; ✓ &#x2713;
-/// ✖ &#x2716; ✔ &#x2714;
-/// ✕ &#10005; Saltires: 🞭🞭🞬🞫🞪🞩🞨
+/// Histogram Window
 /// </summary>
 /// <remarks>
 /// Because a <see cref="Microsoft.UI.Xaml.Window"/> does not inherit <see cref="Microsoft.UI.Xaml.FrameworkElement"/>,
@@ -41,12 +36,11 @@ namespace Transparency;
 /// use the <see cref="Microsoft.UI.Xaml.Window"/> to load a <see cref="Microsoft.UI.Xaml.Controls.Page"/> and then 
 /// wire-up the converters inside the <see cref="Microsoft.UI.Xaml.Controls.Page"/>'s XAML.
 /// </remarks>
-public sealed partial class MainWindow : Window
+public sealed partial class HistoWindow : Window
 {
     ConfigWindow? cfgWin;
     MainViewModel? ViewModel = App.Current.Services.GetService<MainViewModel>();
     FileLogger? Logger = (FileLogger?)App.Current.Services.GetService<ILogger>();
-
     HWND Handle;
     WINDOW_EX_STYLE WinExStyle
     {
@@ -54,7 +48,7 @@ public sealed partial class MainWindow : Window
         set => _ = PInvoke.SetWindowLong(Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, (int)value);
     }
 
-    public MainWindow()
+    public HistoWindow()
     {
         Debug.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{System.Reflection.MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
 
@@ -67,32 +61,21 @@ public sealed partial class MainWindow : Window
         SystemBackdrop = new TransparentBackdrop();
         Content.Background = new SolidColorBrush(Colors.Green);
         Content.Background = new SolidColorBrush(Colors.Transparent);
+    }
 
-        if (App.IsPackaged)
+    void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState != WindowActivationState.Deactivated)
         {
-            Logger?.WriteLine($"The app is running as Packaged.", LogLevel.Debug);
-            Debug.WriteLine($"[INFO] ApplicationName............ {SystemInformation.Instance.ApplicationName}            ");
-            Debug.WriteLine($"[INFO] ApplicationVersion......... {SystemInformation.Instance.ApplicationVersion}         ");
-            Debug.WriteLine($"[INFO] AppUptime.................. {SystemInformation.Instance.AppUptime}                  ");
-            Debug.WriteLine($"[INFO] AvailableMemory............ {SystemInformation.Instance.AvailableMemory}            ");
-            Debug.WriteLine($"[INFO] Culture.................... {SystemInformation.Instance.Culture}                    ");
-            Debug.WriteLine($"[INFO] DeviceFamily............... {SystemInformation.Instance.DeviceFamily}               ");
-            Debug.WriteLine($"[INFO] DeviceManufacturer......... {SystemInformation.Instance.DeviceManufacturer}         ");
-            Debug.WriteLine($"[INFO] DeviceModel................ {SystemInformation.Instance.DeviceModel}                ");
-            Debug.WriteLine($"[INFO] FirstUseTime............... {SystemInformation.Instance.FirstUseTime}               ");
-            Debug.WriteLine($"[INFO] IsAppUpdated............... {SystemInformation.Instance.IsAppUpdated}               ");
-            Debug.WriteLine($"[INFO] IsFirstRun................. {SystemInformation.Instance.IsFirstRun}                 ");
-            Debug.WriteLine($"[INFO] LaunchTime................. {SystemInformation.Instance.LaunchTime}                 ");
-            Debug.WriteLine($"[INFO] LastLaunchTime............. {SystemInformation.Instance.LastLaunchTime}             ");
-            Debug.WriteLine($"[INFO] LaunchCount................ {SystemInformation.Instance.LaunchCount}                ");
-            Debug.WriteLine($"[INFO] OperatingSystem............ {SystemInformation.Instance.OperatingSystem}            ");
-            Debug.WriteLine($"[INFO] OperatingSystemArchitecture {SystemInformation.Instance.OperatingSystemArchitecture}");
-            Debug.WriteLine($"[INFO] OperatingSystemVersion..... {SystemInformation.Instance.OperatingSystemVersion}     ");
-            Debug.WriteLine($"[INFO] TotalLaunchCount........... {SystemInformation.Instance.TotalLaunchCount}           ");
-        }
-        else
-        {
-            Logger?.WriteLine($"The app is running as Unpackaged.", LogLevel.Debug);
+            if (ViewModel!.Config!.logging)
+                Logger?.WriteLine($"The histo window was {args.WindowActivationState}.", LogLevel.Debug);
+
+            SetIsAlwaysOnTop(this, true);
+
+            if (ViewModel.Config.ctrlRowBottom)
+                SetBottomControlRow();
+            else
+                SetTopControlRow();
         }
     }
 
@@ -102,8 +85,8 @@ public sealed partial class MainWindow : Window
         rootGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(40, GridUnitType.Pixel) });
         rootGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Star) });
         Grid.SetRow(ctrlGrid, 0);
-        Grid.SetRow(cpuGauge, 0);
-        Grid.SetRowSpan(cpuGauge, 2);
+        Grid.SetRow(lvHisto, 0);
+        Grid.SetRowSpan(lvHisto, 2);
     }
 
     void SetBottomControlRow()
@@ -112,24 +95,8 @@ public sealed partial class MainWindow : Window
         rootGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(1, GridUnitType.Star) });
         rootGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(40, GridUnitType.Pixel) });
         Grid.SetRow(ctrlGrid, 1);
-        Grid.SetRow(cpuGauge, 0);
-        Grid.SetRowSpan(cpuGauge, 2);
-    }
-
-    void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
-    {
-        if (args.WindowActivationState != WindowActivationState.Deactivated)
-        {
-            if (ViewModel!.Config!.logging)
-                Logger?.WriteLine($"The main window was {args.WindowActivationState}.", LogLevel.Debug);
-
-            SetIsAlwaysOnTop(this, true);
-
-            if (ViewModel.Config.ctrlRowBottom)
-                SetBottomControlRow();
-            else
-                SetTopControlRow();
-        }
+        Grid.SetRow(lvHisto, 0);
+        Grid.SetRowSpan(lvHisto, 2);
     }
 
     void ExitButton_Click(object sender, RoutedEventArgs e)

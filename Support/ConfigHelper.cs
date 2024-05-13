@@ -43,6 +43,10 @@ public class Config
     public bool ctrlRowBottom = true;
 
     [JsonInclude]
+    [JsonPropertyName("useHistogram")]
+    public bool useHistogram = false;
+
+    [JsonInclude]
     [JsonPropertyName("metrics")]
     public string? metrics;
 
@@ -69,6 +73,10 @@ public class Config
     [JsonInclude]
     [JsonPropertyName("borderSize")]
     public int borderSize = 1;
+
+    [JsonInclude]
+    [JsonPropertyName("opacity")]
+    public double opacity = 0.6;
 
     [JsonInclude]
     [JsonPropertyName("background")]

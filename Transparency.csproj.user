@@ -6,4 +6,9 @@
   <PropertyGroup>
     <ActiveDebugProfile>Transparency (Unpackaged)</ActiveDebugProfile>
   </PropertyGroup>
+  <ItemGroup>
+    <Page Update="HistoWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
 </Project>

@@ -19,6 +19,8 @@ using Transparency.Services;
 using CommunityToolkit.Mvvm.Input;
 using static System.Net.Mime.MediaTypeNames;
 using Transparency.Controls;
+using Transparency.Models;
+using System.Collections.ObjectModel;
 
 namespace Transparency.ViewModels;
 
@@ -36,11 +38,28 @@ public class MainViewModel : ObservableRecipient
     SolidColorBrush _level5;
     SolidColorBrush _level6;
 
+
+    public ObservableCollection<NamedColor> NamedColors = new();
+
+    NamedColor? _scrollToItem;
+    public NamedColor? ScrollToItem
+    {
+        get => _scrollToItem;
+        set => SetProperty(ref _scrollToItem, value);
+    }
+
     Thickness _borderSize;
     public Thickness BorderSize
     {
         get => _borderSize;
         set => SetProperty(ref _borderSize, value);
+    }
+
+    double _opacity;
+    public double Opacity
+    {
+        get => _opacity;
+        set => SetProperty(ref _opacity, value);
     }
 
     bool _isBusy = false;
@@ -125,16 +144,20 @@ public class MainViewModel : ObservableRecipient
         {
             Interval = App.LocalConfig.msRefresh;
             _borderSize = new Thickness(App.LocalConfig.borderSize);
+            _opacity = App.LocalConfig.opacity;
         }
         else
+        {
             _borderSize = new Thickness(2);
+            _opacity = 0.6;
+        }
 
         KeyDownCommand = new RelayCommand<object>(async (obj) =>
         {
             IsBusy = true;
             #region [KeyDownTriggerBehavior Testing]
             // It's considered poor form to play with UI controls from the ViewModel, but
-            // this was a fun excercise and there are use-cases where this might be desired.
+            // this was a fun exercise and there are use-cases where this might be desired.
             // This is currently used as a validation step to demo the KeyDownTriggerBehavior.
             if (obj is Microsoft.UI.Xaml.Controls.Grid grid)
             {
@@ -171,7 +194,16 @@ public class MainViewModel : ObservableRecipient
                                         break;
                                     case string name when name.ToLower().Contains("border"):
                                         if (App.LocalConfig is not null && int.TryParse(tb.Text, out int size))
+                                        {
                                             App.LocalConfig.borderSize = size;
+                                            BorderSize = new Thickness(size);
+                                        }
+                                        else
+                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                        break;
+                                    case string name when name.ToLower().Contains("opacity"):
+                                        if (App.LocalConfig is not null && double.TryParse(tb.Text, out double opac))
+                                            App.LocalConfig.opacity = Opacity = opac;
                                         else
                                             await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
                                         break;
@@ -208,7 +240,14 @@ public class MainViewModel : ObservableRecipient
                                 break;
                             case string name when name.ToLower().Contains("border"):
                                 if (App.LocalConfig is not null && int.TryParse(tb.Text, out int size))
+                                {
                                     App.LocalConfig.borderSize = size;
+                                    BorderSize = new Thickness(size);
+                                }
+                                break;
+                            case string name when name.ToLower().Contains("opacity"):
+                                if (App.LocalConfig is not null && double.TryParse(tb.Text, out double opac))
+                                    App.LocalConfig.opacity = Opacity = opac;
                                 break;
                             default:
                                 Debug.WriteLine($"[INFO] 📢 No switch case defined for \"{tb.Name}\"");
@@ -261,6 +300,16 @@ public class MainViewModel : ObservableRecipient
                             if (App.LocalConfig is not null && int.TryParse(tb.Text, out int size))
                             {
                                 App.LocalConfig.borderSize = size;
+                                BorderSize = new Thickness(size);
+                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                            }
+                            else
+                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                            break;
+                        case string name when name.ToLower().Contains("opacity"):
+                            if (App.LocalConfig is not null && double.TryParse(tb.Text, out double opac))
+                            {
+                                App.LocalConfig.opacity = opac;
                                 await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
                             }
                             else
@@ -277,6 +326,11 @@ public class MainViewModel : ObservableRecipient
                 if (cmd != null)
                     Debug.WriteLine($"[INFO] 📢 Got Behavior InvokeCommandAction");
             }
+            else if (obj is Microsoft.UI.Xaml.Controls.Slider sld)
+            {
+                if (sld != null)
+                    Debug.WriteLine($"[INFO] 📢 Got Slider value \"{sld.Value}\"");
+            }
             else if (obj is Microsoft.UI.Xaml.Window win)
             {
                 if (win != null)
@@ -284,7 +338,8 @@ public class MainViewModel : ObservableRecipient
             }
             else
             {
-                Debug.WriteLine($"[WARNING] 📢 No action defined for type '{obj?.GetType()}'");
+                if (obj != null)
+                    Debug.WriteLine($"[WARNING] 📢 No action defined for type '{obj?.GetType()}', name '{obj?.GetType().Name}', and base type {obj?.GetType().BaseType?.Name}");
             }
             #endregion
             await Task.Delay(1000); // for spinners
@@ -396,6 +451,19 @@ public class MainViewModel : ObservableRecipient
                 {
                     width = AmplifyLinear(newValue);
                 }
+
+
+                // Opacity is not carried over from the SolidColorBrush color property accessors.
+                var clr = NeedleColor.Color;
+                var opac = App.LocalConfig != null ? App.LocalConfig.opacity : 0.75;
+
+                // Add entry for histogram.
+                NamedColors.Insert(0, new NamedColor { Height = (double)width, Amount = $"{(int)newValue}%", Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = clr, Opacity = opac });
+
+                // Monitor memory consumption.
+                if (NamedColors.Count > 100)
+                    NamedColors.RemoveAt(NamedColors.Count - 1);
+
             }
         }
         catch (Exception ex)

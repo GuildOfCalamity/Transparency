@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:Transparency"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="ThisWindow"
     mc:Ignorable="d">
     <Grid
         x:Name="Content"
@@ -38,7 +39,7 @@
                 Minimum="0"
                 NeedleBrush="{x:Bind ViewModel.NeedleColor, Mode=OneWay}"
                 NeedleLength="68"
-                Opacity="0.9"
+                Opacity="{x:Bind ViewModel.Config.opacity, Mode=OneWay}"
                 ScalePadding="0"
                 ScaleWidth="23"
                 StepSize="1"
@@ -69,7 +70,7 @@
                     HorizontalAlignment="Left"
                     Click="Settings_Click"
                     Foreground="{ThemeResource SystemAccentColorLight2}"
-                    Opacity="0.75"
+                    Opacity="{x:Bind ViewModel.Config.opacity, Mode=OneWay}"
                     Style="{ThemeResource SettingsToolbarButton}" />
                 <TextBlock
                     Grid.Column="1"
@@ -79,6 +80,7 @@
                     FontFamily="{ThemeResource PrimaryFont}"
                     FontSize="{ThemeResource FontSizeSmall}"
                     Foreground="{ThemeResource SecondaryBrush}"
+                    Opacity="0.9"
                     Text="{x:Bind ViewModel.Status, Mode=OneWay}" />
                 <Button
                     Grid.Column="2"
@@ -88,7 +90,7 @@
                     Click="ExitButton_Click"
                     Content="&#10006;"
                     FontSize="18"
-                    Opacity="0.6"
+                    Opacity="{x:Bind ViewModel.Config.opacity, Mode=OneWay}"
                     Style="{ThemeResource ToolbarButton}" />
             </Grid>
             <!--#endregion-->

@@ -11,12 +11,15 @@
     xmlns:interactcore="using:Microsoft.Xaml.Interactions.Core"
     xmlns:local="using:Transparency"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="ThisWindow"
     mc:Ignorable="d">
+    <!--
+        <Grid Background="{ThemeResource BackgroundBrush}"
+    -->
     <Grid
         x:Name="root"
         HorizontalAlignment="Stretch"
         VerticalAlignment="Stretch"
-        Background="{ThemeResource BackgroundBrush}"
         RowDefinitions="Auto,*">
         <Grid.Resources>
             <ThemeShadow x:Name="SharedShadow" />
@@ -30,7 +33,8 @@
                     Duration="0:0:1.0" />
             </Storyboard>
         </Grid.Resources>
-        <!--  Custom TitleBar  -->
+
+        <!--#region [Custom TitleBar]-->
         <Grid
             x:Name="CustomTitleBar"
             Grid.Row="0"
@@ -49,7 +53,9 @@
                     Text="{x:Bind Title, Mode=OneWay}" />
             </StackPanel>
         </Grid>
+        <!--#endregion-->
 
+        <!--#region [Content]-->
         <StackPanel
             x:Name="spConfig"
             Grid.Row="1"
@@ -105,6 +111,7 @@
 
             <ctrl:SeparatorLine Margin="1,0,-20,0" />
 
+            <!--#region [Update Frequency]-->
             <Slider
                 Width="170"
                 Margin="4,10,0,0"
@@ -123,6 +130,9 @@
                     </TextBlock>
                 </Slider.Header>
             </Slider>
+            <!--#endregion-->
+
+            <!--#region [Background Color]-->
             <TextBox
                 x:Name="tbColor"
                 Width="170"
@@ -132,8 +142,9 @@
                 MaxLength="8"
                 PlaceholderText="8 characters"
                 Style="{ThemeResource GlowTextBox}"
-                Text="{x:Bind ViewModel.Config.background, Mode=TwoWay}"
-                TextWrapping="Wrap">
+                Text="{x:Bind ViewModel.Config.background, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                TextWrapping="Wrap"
+                ToolTipService.ToolTip="Requires app restart">
                 <interact:Interaction.Behaviors>
                     <behave:AutoFocusBehavior />
                     <behave:KeyDownTriggerBehavior Key="Enter">
@@ -143,6 +154,9 @@
                     </behave:KeyDownTriggerBehavior>
                 </interact:Interaction.Behaviors>
             </TextBox>
+            <!--#endregion-->
+
+            <!--#region [Border Thickness]-->
             <TextBox
                 x:Name="tbBorder"
                 Width="170"
@@ -152,7 +166,30 @@
                 MaxLength="2"
                 PlaceholderText="0-20"
                 Style="{ThemeResource GlowTextBox}"
-                Text="{x:Bind ViewModel.Config.borderSize, Mode=TwoWay}"
+                Text="{x:Bind ViewModel.Config.borderSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                TextWrapping="Wrap"
+                ToolTipService.ToolTip="Requires app restart">
+                <interact:Interaction.Behaviors>
+                    <behave:KeyDownTriggerBehavior Key="Enter">
+                        <interactcore:InvokeCommandAction Command="{x:Bind ViewModel.KeyDownCommand}" CommandParameter="{x:Bind root}" />
+                        <!--<interactcore:CallMethodAction MethodName="SomePublicMethodHere" TargetObject="{x:Bind}" />-->
+                        <!--<interactcore:ChangePropertyAction PropertyName="Margin" TargetObject="{x:Bind root}" Value="30" />-->
+                    </behave:KeyDownTriggerBehavior>
+                </interact:Interaction.Behaviors>
+            </TextBox>
+            <!--#endregion-->
+
+            <!--#region [Opacity]-->
+            <TextBox
+                x:Name="tbOpacity"
+                Width="170"
+                Margin="1,10,0,0"
+                HorizontalAlignment="Left"
+                Header="Opacity"
+                MaxLength="4"
+                PlaceholderText="0.1-1.0"
+                Style="{ThemeResource GlowTextBox}"
+                Text="{x:Bind ViewModel.Config.opacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextWrapping="Wrap">
                 <interact:Interaction.Behaviors>
                     <behave:KeyDownTriggerBehavior Key="Enter">
@@ -162,6 +199,9 @@
                     </behave:KeyDownTriggerBehavior>
                 </interact:Interaction.Behaviors>
             </TextBox>
+            <!--#endregion-->
+
+            <!--#region [Startup Launch]-->
             <ToggleSwitch
                 x:Name="tsAutoStart"
                 Margin="1,10,0,0"
@@ -170,7 +210,11 @@
                 IsOn="False"
                 OffContent="Login Start Disabled"
                 OnContent="Login Start Enabled"
-                Style="{ThemeResource GlowSwitch}" />
+                Style="{ThemeResource GlowSwitch}"
+                ToolTipService.ToolTip="NOT IMPLEMENTED (in development)" />
+            <!--#endregion-->
+
+            <!--#region [Logging]-->
             <ToggleSwitch
                 x:Name="tsLogging"
                 Margin="1,1,0,0"
@@ -180,19 +224,36 @@
                 OffContent="Logging Disabled"
                 OnContent="Logging Enabled"
                 Style="{ThemeResource GlowSwitch}" />
+            <!--#endregion-->
+
+            <!--#region [Button Position]-->
             <ToggleSwitch
                 x:Name="tsCtrlRow"
                 Margin="1,1,0,0"
                 HorizontalAlignment="Left"
                 Header=""
                 IsOn="{x:Bind ViewModel.Config.ctrlRowBottom, Mode=TwoWay}"
-                OffContent="Controls Above Gauge"
-                OnContent="Controls Below Gauge"
+                OffContent="Controls Above Widget"
+                OnContent="Controls Below Widget"
                 Style="{ThemeResource GlowSwitch}" />
+            <!--#endregion-->
+
+            <!--#region [Graph Type]-->
+            <ToggleSwitch
+                x:Name="tsHisto"
+                Margin="1,1,0,0"
+                HorizontalAlignment="Left"
+                Header=""
+                IsOn="{x:Bind ViewModel.Config.useHistogram, Mode=TwoWay}"
+                OffContent="Histogram Disabled"
+                OnContent="Histogram Enabled"
+                Style="{ThemeResource GlowSwitch}"
+                ToolTipService.ToolTip="Requires app restart" />
+            <!--#endregion-->
 
             <ctrl:SeparatorLine Margin="1,5,-20,0" />
 
-            <!--  Logo Icon  -->
+            <!--#region [Logo Icon]-->
             <Image
                 Width="60"
                 Height="60"
@@ -201,9 +262,12 @@
                 VerticalAlignment="Top"
                 Opacity="0.25"
                 Source="ms-appx:///Assets/WinTransparent.png" />
-        </StackPanel>
+            <!--#endregion-->
 
-        <!--  AutoCloseInfoBar Testing  -->
+        </StackPanel>
+        <!--#endregion-->
+
+        <!--#region [AutoClose InfoBar]-->
         <ctrl:AutoCloseInfoBar
             x:Name="infoBar"
             Grid.Row="1"
@@ -212,5 +276,7 @@
             AutoCloseInterval="4700"
             IsOpen="False"
             Severity="Informational" />
+        <!--#endregion-->
+
     </Grid>
 </Window>

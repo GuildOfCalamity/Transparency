@@ -4,8 +4,11 @@
 
 ![Example Picture](./ScreenShot2.png)
 
+![Example Picture](./ScreenShot3.png)
+
 * Demonstration of transparent [WinUI3](https://learn.microsoft.com/en-us/windows/apps/winui/winui3) [Window](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.window?view=windows-app-sdk-1.5) widget.
-* This feature is trivial when using the [AllowsTransparency](https://learn.microsoft.com/en-us/dotnet/api/system.windows.window.allowstransparency?view=windowsdesktop-8.0#remarks) property in WPF; but since the WinUI3 Window is meant for x-plat purposes we do not have that luxury. 
+* This feature is trivial when using the [AllowsTransparency](https://learn.microsoft.com/en-us/dotnet/api/system.windows.window.allowstransparency?view=windowsdesktop-8.0#remarks) property in **WPF**; but since the **WinUI3** Window is meant for x-plat purposes we do not have that luxury. 
+* I've also added an example of an [Desktop Acrylic Controller](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.composition.systembackdrops.desktopacryliccontroller?view=windows-app-sdk-1.5) for the settings window.
 * Other [Nuget](https://learn.microsoft.com/en-us/nuget/what-is-nuget) packages include:
 	- "CommunityToolkit.Mvvm" Version="8.2.2"
 	- "CommunityToolkit.WinUI" Version="7.1.2"
@@ -17,9 +20,11 @@
 	- "Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9"
 	- "System.Diagnostics.PerformanceCounter" Version="8.0.0"
 
+## 📝 v1.0.0.1 - May 2024
+* Added Histogram window and related config.
 
 ## 🎛️ Usage
-* This application was intended to be run unpakaged, but I have added checks for running in packaged format as well.
+* This application was intended to be run unpackaged, but I have added checks for running in packaged format as well.
 * Upon first run the `TransparencyConfig.json` settings file will be created. During runtime, these settings can be adjusted from the `ConfigWindow.xaml`
 
 ## 🧾 License/Warranty

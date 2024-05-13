@@ -22,9 +22,9 @@
     -->
     <LangVersion>latest</LangVersion>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <Version>1.0.0.0</Version>
-    <FileVersion>1.0.0.0</FileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <Version>1.0.0.1</Version>
+    <FileVersion>1.0.0.1</FileVersion>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
     <PackageId>Transparency2024</PackageId>
     <Authors>The Guild</Authors>
     <!-- 
@@ -68,6 +68,7 @@
     <None Remove="ConfigWindow.xaml" />
     <None Remove="Controls\CompositionShadow.xaml" />
     <None Remove="Controls\SeparatorLine.xaml" />
+    <None Remove="HistoWindow.xaml" />
   </ItemGroup>
     
   <ItemGroup>
@@ -103,6 +104,11 @@
   -->
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <ProjectCapability Include="Msix" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="HistoWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="ConfigWindow.xaml">

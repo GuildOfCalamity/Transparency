@@ -34,7 +34,8 @@ public partial class App : Application
     int m_height = 300;
     Window? m_window;
     static UISettings m_UISettings = new UISettings();
-    public new static App Current => (App)Application.Current; // Gets the current app instance in use.
+
+    public new static App Current => (App)Application.Current; // Gets the current app instance (for Dependency Injection).
     public IServiceProvider Services { get; }
     public static IntPtr WindowHandle { get; set; }
     public static FrameworkElement? MainRoot { get; set; }
@@ -84,9 +85,10 @@ public partial class App : Application
         if (cfg is not null)
         {
             if (App.MainRoot is not null)
-                cfg.theme = $"{App.MainRoot.ActualTheme}";
+                cfg.theme = $"{ThemeRequested}";
             cfg.firstRun = false;
             cfg.time = DateTime.Now;
+            cfg.version = $"{GetCurrentAssemblyVersion()}";
             Process proc = Process.GetCurrentProcess();
             cfg.metrics = $"Process used {proc.PrivateMemorySize64 / 1024 / 1024}MB of memory and {proc.TotalProcessorTime.ToReadableString()} TotalProcessorTime on {Environment.ProcessorCount} possible cores.";
             try
@@ -160,12 +162,14 @@ public partial class App : Application
                     theme = $"{App.ThemeRequested}",
                     version = $"{App.GetCurrentAssemblyVersion()}",
                     time = DateTime.Now,
+                    useHistogram = false,
                     metrics = "N/A",
                     borderSize = 3,
+                    opacity = 0.6,
                     msRefresh = 2000,
                     windowW = m_width,
                     windowH = m_height,
-                    background = "00FFFFFF"
+                    background = "001F1FFF"
                 };
                 ConfigHelper.SaveConfig(LocalConfig);
             }
@@ -176,7 +180,10 @@ public partial class App : Application
         }
         #endregion
 
-        m_window = new MainWindow();
+        if (LocalConfig is not null && LocalConfig.useHistogram)
+            m_window = new HistoWindow();
+        else
+            m_window = new MainWindow();
 
         var appWin = GetAppWindow(m_window);
         if (appWin != null)
@@ -212,17 +219,28 @@ public partial class App : Application
                         _lastMove = DateTime.Now;
                         if (s.Position.X > 0 && s.Position.Y > 0)
                         {
-                            if (s.Presenter is OverlappedPresenter op && op.State != OverlappedPresenterState.Maximized)
+                            // This property is initially null. Once a window has been shown it always has a
+                            // presenter applied, either one applied by the platform or applied by the app itself.
+                            if (s.Presenter is not null && s.Presenter is OverlappedPresenter op)
                             {
-                                Debug.WriteLine($"[INFO] Updating window position to {s.Position.X},{s.Position.Y} and size to {s.Size.Width},{s.Size.Height}");
-                                LocalConfig.windowX = s.Position.X;
-                                LocalConfig.windowY = s.Position.Y;
-                                LocalConfig.windowH = s.Size.Height;
-                                LocalConfig.windowW = s.Size.Width;
-                            }
-                            else
-                            {
-                                Debug.WriteLine($"[INFO] Ignoring position saving because window maximized.");
+                                if (op.State == OverlappedPresenterState.Minimized)
+                                {
+                                    appWin.IsShownInSwitchers = true;
+                                }
+                                else if (op.State != OverlappedPresenterState.Maximized)
+                                {
+                                    appWin.IsShownInSwitchers = false;
+                                    Debug.WriteLine($"[INFO] Updating window position to {s.Position.X},{s.Position.Y} and size to {s.Size.Width},{s.Size.Height}");
+                                    LocalConfig.windowX = s.Position.X;
+                                    LocalConfig.windowY = s.Position.Y;
+                                    LocalConfig.windowH = s.Size.Height;
+                                    LocalConfig.windowW = s.Size.Width;
+                                }
+                                else
+                                {
+                                    appWin.IsShownInSwitchers = false;
+                                    Debug.WriteLine($"[INFO] Ignoring position saving (window maximized)");
+                                }
                             }
                         }
                     }
@@ -255,9 +273,12 @@ public partial class App : Application
         }
         else
         {
-            Debug.WriteLine($"[INFO] Moving window to previous position {LocalConfig.windowX},{LocalConfig.windowY}");
+            Debug.WriteLine($"[INFO] Moving window to previous position {LocalConfig.windowX},{LocalConfig.windowY} with size {LocalConfig.windowW},{LocalConfig.windowH}");
             //appWin?.Move(new Windows.Graphics.PointInt32(LocalConfig.windowX, LocalConfig.windowY));
-            appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW, LocalConfig.windowH), Microsoft.UI.Windowing.DisplayArea.Primary);
+            if (LocalConfig.useHistogram)
+                appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW, LocalConfig.windowH >= 210 ? LocalConfig.windowH : 210 ), Microsoft.UI.Windowing.DisplayArea.Primary);
+            else
+                appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW, LocalConfig.windowH), Microsoft.UI.Windowing.DisplayArea.Primary);
         }
         #endregion
     }
@@ -500,10 +521,7 @@ public partial class App : Application
     /// <summary>
     /// Callback for the selected option from the user.
     /// </summary>
-    static void DialogDismissedHandler(IUICommand command)
-    {
-        Debug.WriteLine($"[INFO] UICommand.Label ⇨ {command.Label}");
-    }
+    static void DialogDismissedHandler(IUICommand command) => Debug.WriteLine($"[INFO] UICommand.Label ⇨ {command.Label}");
 
     /// <summary>
     /// The <see cref="Microsoft.UI.Xaml.Controls.ContentDialog"/> looks much better than the

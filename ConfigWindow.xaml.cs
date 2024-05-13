@@ -13,11 +13,14 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.Extensions.DependencyInjection;
 
 using Transparency.ViewModels;
 using Transparency.Services;
 using Transparency.Support;
+
+using WinRT; // required to support Window.As<ICompositionSupportsSystemBackdrop>()
 
 namespace Transparency;
 
@@ -32,17 +35,22 @@ namespace Transparency;
 /// </remarks>
 public sealed partial class ConfigWindow : Window
 {
-    Microsoft.UI.Windowing.AppWindow appWindow;
+    SystemBackdropConfiguration? _configurationSource;
+    DesktopAcrylicController? _acrylicController;
+    Microsoft.UI.Windowing.AppWindow? appWindow;
     MainViewModel? ViewModel = App.Current.Services.GetService<MainViewModel>();
     FileLogger? Logger = (FileLogger?)App.Current.Services.GetService<ILogger>();
 
     public ConfigWindow()
     {
+        Debug.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{System.Reflection.MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
+
         this.InitializeComponent();
         this.ExtendsContentIntoTitleBar = true;
         this.Title = "Settings";
         SetTitleBar(CustomTitleBar);
         this.Activated += ConfigWindow_Activated;
+        this.Closed += ConfigWindow_Closed;
         #region [Resize, Center and Icon]
         var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this); // Retrieve the window handle (HWND) of the current (XAML) WinUI3 window.
         Microsoft.UI.WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd); // Retrieve the WindowId that corresponds to hWnd.
@@ -55,6 +63,53 @@ public sealed partial class ConfigWindow : Window
                 appWindow?.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, $"Assets/WinTransparent.ico"));
         }
         #endregion
+
+        // https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/system-backdrop-controller
+        if (DesktopAcrylicController.IsSupported())
+        {
+            // Hook up the policy object.
+            _configurationSource = new SystemBackdropConfiguration();
+            // Create the desktop controller.
+            _acrylicController = new Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController();
+            _acrylicController.TintOpacity = 0.4f; // Lower value may be too translucent vs light background.
+            _acrylicController.LuminosityOpacity = 0.1f;
+            _acrylicController.TintColor = Microsoft.UI.Colors.Gray;
+            // Fall-back color is only used when the window state becomes deactivated.
+            _acrylicController.FallbackColor = Microsoft.UI.Colors.Transparent;
+            // Note: Be sure to have "using WinRT;" to support the Window.As<...>() call.
+            _acrylicController.AddSystemBackdropTarget(this.As<Microsoft.UI.Composition.ICompositionSupportsSystemBackdrop>());
+            _acrylicController.SetSystemBackdropConfiguration(_configurationSource);
+        }
+    }
+
+    void ConfigWindow_Closed(object sender, WindowEventArgs args)
+    {
+        // Make sure the Acrylic controller is disposed
+        // so it doesn't try to access a closed window.
+        if (_acrylicController is not null)
+        {
+            _acrylicController.Dispose();
+            _acrylicController = null;
+        }
+    }
+    void ConfigWindow_Activated(object sender, WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState != WindowActivationState.Deactivated)
+        {
+
+            if (ViewModel!.Config!.logging)
+                Logger?.WriteLine($"The config window was {args.WindowActivationState}.", LogLevel.Debug);
+
+            ShowMessage("You can adjust app settings here.", InfoBarSeverity.Informational);
+
+            appWindow?.Resize(new Windows.Graphics.SizeInt32(350, 710));
+
+            App.CenterWindow(this);
+        }
+        else
+        {
+            EndStoryboard();
+        }
     }
 
     public void BeginStoryboard()
@@ -67,27 +122,6 @@ public sealed partial class ConfigWindow : Window
     {
         if (App.AnimationsEffectsEnabled)
             OpacityStoryboard.SkipToFill(); //OpacityStoryboard.Stop();
-    }
-
-    void ConfigWindow_Activated(object sender, WindowActivatedEventArgs args)
-    {
-        if (args.WindowActivationState != WindowActivationState.Deactivated)
-        {
-
-            if (ViewModel!.Config!.logging)
-                Logger?.WriteLine($"The config window was {args.WindowActivationState}.", LogLevel.Debug);
-
-            ShowMessage("You can adjust app settings here.", InfoBarSeverity.Informational);
-
-            if (appWindow is not null)
-                appWindow?.Resize(new Windows.Graphics.SizeInt32(350, 610));
-
-            App.CenterWindow(this);
-        }
-        else
-        {
-            EndStoryboard();
-        }
     }
 
     /// <summary>
