@@ -40,7 +40,7 @@
         </Grid.Resources>
         <!--  We're now using our home-brew Behavior Animation instead of the Opacity Storyboard.  -->
         <interact:Interaction.Behaviors>
-            <behave:SlideAnimationBehavior Down="False" Time="0.7" />
+            <behave:SlideAnimationBehavior Down="False" Seconds="0.7" />
         </interact:Interaction.Behaviors>
         <!--#endregion-->
 
@@ -51,7 +51,7 @@
             Height="30"
             Margin="0">
             <interact:Interaction.Behaviors>
-                <behave:SlideAnimationBehavior Down="False" Time="1.5" />
+                <behave:SlideAnimationBehavior Down="False" Seconds="1.5" />
             </interact:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal">
                 <Image
@@ -283,8 +283,12 @@
                 Margin="20,5,20,10"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
-                Opacity="0.25"
-                Source="ms-appx:///Assets/WinTransparent.png" />
+                Source="ms-appx:///Assets/WinTransparent.png">
+                <interact:Interaction.Behaviors>
+                    <behave:ScaleAnimationBehavior Final="1.0" Seconds="2.0" />
+                    <behave:OpacityAnimationBehavior Final="0.5" Seconds="6.0" />
+                </interact:Interaction.Behaviors>
+            </Image>
             <!--#endregion-->
 
         </StackPanel>

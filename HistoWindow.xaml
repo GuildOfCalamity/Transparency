@@ -3,9 +3,12 @@
     x:Class="Transparency.HistoWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:behave="using:Transparency.Behaviors"
     xmlns:ctrl="using:Transparency.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:helper="using:Transparency.Support"
+    xmlns:interact="using:Microsoft.Xaml.Interactivity"
+    xmlns:interactcore="using:Microsoft.Xaml.Interactions.Core"
     xmlns:local="using:Transparency"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:model="using:Transparency.Models"
@@ -32,6 +35,9 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="40" />
             </Grid.RowDefinitions>
+            <interact:Interaction.Behaviors>
+                <behave:SlideAnimationBehavior Down="False" Seconds="1.5" />
+            </interact:Interaction.Behaviors>
 
             <!--#region [Histogram]-->
             <ListView

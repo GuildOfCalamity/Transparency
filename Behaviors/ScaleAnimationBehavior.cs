@@ -18,7 +18,7 @@ namespace Transparency.Behaviors;
 /// When the <see cref="FrameworkElement"/> is loaded the translation animation will be performed.
 /// We'll consider sliding up to be transitioning into a usable state, while sliding down means to put away.
 /// </summary>
-public class SlideAnimationBehavior : Behavior<FrameworkElement>
+public class ScaleAnimationBehavior : Behavior<FrameworkElement>
 {
     #region [Props]
     DispatcherTimer? _timer;
@@ -42,21 +42,21 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
     }
 
     /// <summary>
-    /// Identifies the <see cref="Down"/> property for the animation.
+    /// Identifies the <see cref="Final"/> property for the animation.
     /// </summary>
-    public static readonly DependencyProperty DownProperty = DependencyProperty.Register(
-        nameof(Down),
-        typeof(bool),
+    public static readonly DependencyProperty FinalProperty = DependencyProperty.Register(
+        nameof(Final),
+        typeof(double),
         typeof(SlideAnimationBehavior),
-        new PropertyMetadata(false));
+        new PropertyMetadata(1d));
 
     /// <summary>
-    /// Gets or sets the direction.
+    /// Gets or sets the amount.
     /// </summary>
-    public bool Down
+    public double Final
     {
-        get => (bool)GetValue(DownProperty);
-        set => SetValue(DownProperty, value);
+        get => (double)GetValue(FinalProperty);
+        set => SetValue(FinalProperty, value);
     }
     #endregion
 
@@ -92,56 +92,9 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
         var obj = sender as FrameworkElement;
         if (obj is null) { return; }
 
-        if (obj.ActualHeight != double.NaN && obj.ActualHeight != 0)
-        {
-            Debug.WriteLine($"[INFO] Reported {sender.GetType().Name} height is {obj.ActualHeight} pixels");
-
-            if (!Down)
-            {
-                AnimateUIElementOpacity(0, 1, TimeSpan.FromSeconds(Seconds).Multiply(1.3), (UIElement)sender);
-                AnimateUIElementOffset(new Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds), (UIElement)sender);
-            }
-            else
-            {
-                AnimateUIElementOpacity(1, 0, TimeSpan.FromSeconds(Seconds), (UIElement)sender);
-                AnimateUIElementOffset(new Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds), (UIElement)sender, AnimationDirection.Reverse);
-                // If the control happens to slide down over another control then the pointer's
-                // hit test may become a problem, so we'll set the visibility property.
-                _timer = new DispatcherTimer();
-                _timer.Interval = TimeSpan.FromSeconds(Seconds);
-                _timer.Tick += (_, _) =>
-                {
-                    _timer.Stop();
-                    ((UIElement)sender).Visibility = Visibility.Collapsed;
-                };
-                _timer.Start();
-            }
-        }
-        else
-        {
-            if (!Down)
-            {
-                AnimateUIElementOpacity(0, 1, TimeSpan.FromSeconds(Seconds).Multiply(1.3), (UIElement)sender);
-                AnimateUIElementOffset(new Point(0, 250), TimeSpan.FromSeconds(Seconds), (UIElement)sender);
-            }
-            else
-            {
-                AnimateUIElementOpacity(1, 0, TimeSpan.FromSeconds(Seconds), (UIElement)sender);
-                AnimateUIElementOffset(new Point(0, 250), TimeSpan.FromSeconds(Seconds), (UIElement)sender, AnimationDirection.Reverse);
-                // If the control happens to slide down over another control then the pointer's
-                // hit test may become a problem, so we'll set the visibility property.
-                _timer = new DispatcherTimer();
-                _timer.Interval = TimeSpan.FromSeconds(Seconds);
-                _timer.Tick += (_, _) =>
-                {
-                    _timer.Stop();
-                    ((UIElement)sender).Visibility = Visibility.Collapsed;
-                };
-                _timer.Start();
-            }
-        }
+        Debug.WriteLine($"[INFO] Scale animation will run for {Seconds} seconds.");
+        AnimateUIElementScale(Final, TimeSpan.FromSeconds(Seconds), (UIElement)sender);
     }
-
 
     /// <summary>
     /// <see cref="FrameworkElement"/> event.
