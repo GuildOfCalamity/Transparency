@@ -19,8 +19,13 @@
     <Grid
         x:Name="root"
         HorizontalAlignment="Stretch"
-        VerticalAlignment="Stretch"
-        RowDefinitions="Auto,*">
+        VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--#region [Animation]-->
         <Grid.Resources>
             <ThemeShadow x:Name="SharedShadow" />
             <Storyboard x:Name="OpacityStoryboard">
@@ -33,6 +38,11 @@
                     Duration="0:0:1.0" />
             </Storyboard>
         </Grid.Resources>
+        <!--  We're now using our home-brew Behavior Animation instead of the Opacity Storyboard.  -->
+        <interact:Interaction.Behaviors>
+            <behave:SlideAnimationBehavior Down="False" Time="0.7" />
+        </interact:Interaction.Behaviors>
+        <!--#endregion-->
 
         <!--#region [Custom TitleBar]-->
         <Grid
@@ -40,6 +50,9 @@
             Grid.Row="0"
             Height="30"
             Margin="0">
+            <interact:Interaction.Behaviors>
+                <behave:SlideAnimationBehavior Down="False" Time="1.5" />
+            </interact:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal">
                 <Image
                     Width="25"
@@ -96,10 +109,10 @@
                     Margin="0,0,10,0"
                     HorizontalAlignment="Right">
                     <icons:FluentIconElement
-                        Margin="4,3,0,0"
+                        Margin="4,2,0,0"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        Foreground="Black"
+                        Foreground="{ThemeResource GradientShadowBrush}"
                         Symbol="Settings28" />
                     <icons:FluentIconElement
                         HorizontalAlignment="Center"
@@ -109,7 +122,7 @@
                 </Grid>
             </Grid>
 
-            <ctrl:SeparatorLine Margin="1,0,-20,0" />
+            <ctrl:SeparatorLine Margin="1,0,0,0" />
 
             <!--#region [Update Frequency]-->
             <Slider
@@ -124,9 +137,9 @@
                 Value="{x:Bind ViewModel.Interval, Mode=TwoWay}">
                 <Slider.Header>
                     <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <Run Text="Frequency (" />
+                        <Run Foreground="{ThemeResource GradientTextBrush}" Text="Frequency (" />
                         <Run Foreground="{ThemeResource SecondaryBrush}" Text="{x:Bind ViewModel.Interval, Mode=OneWay}" />
-                        <Run Text="ms )" />
+                        <Run Foreground="{ThemeResource GradientTextBrush}" Text="ms )" />
                     </TextBlock>
                 </Slider.Header>
             </Slider>
@@ -138,13 +151,15 @@
                 Width="170"
                 Margin="1,10,0,0"
                 HorizontalAlignment="Left"
-                Header="Background Color"
                 MaxLength="8"
                 PlaceholderText="8 characters"
                 Style="{ThemeResource GlowTextBox}"
                 Text="{x:Bind ViewModel.Config.background, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextWrapping="Wrap"
                 ToolTipService.ToolTip="Requires app restart">
+                <TextBox.Header>
+                    <TextBlock Foreground="{ThemeResource GradientTextBrush}" Text="Background Color" />
+                </TextBox.Header>
                 <interact:Interaction.Behaviors>
                     <behave:AutoFocusBehavior />
                     <behave:KeyDownTriggerBehavior Key="Enter">
@@ -162,13 +177,15 @@
                 Width="170"
                 Margin="1,10,0,0"
                 HorizontalAlignment="Left"
-                Header="Border Size"
                 MaxLength="2"
                 PlaceholderText="0-20"
                 Style="{ThemeResource GlowTextBox}"
                 Text="{x:Bind ViewModel.Config.borderSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextWrapping="Wrap"
                 ToolTipService.ToolTip="Requires app restart">
+                <TextBox.Header>
+                    <TextBlock Foreground="{ThemeResource GradientTextBrush}" Text="Border Size" />
+                </TextBox.Header>
                 <interact:Interaction.Behaviors>
                     <behave:KeyDownTriggerBehavior Key="Enter">
                         <interactcore:InvokeCommandAction Command="{x:Bind ViewModel.KeyDownCommand}" CommandParameter="{x:Bind root}" />
@@ -185,12 +202,14 @@
                 Width="170"
                 Margin="1,10,0,0"
                 HorizontalAlignment="Left"
-                Header="Opacity"
                 MaxLength="4"
                 PlaceholderText="0.1-1.0"
                 Style="{ThemeResource GlowTextBox}"
                 Text="{x:Bind ViewModel.Config.opacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextWrapping="Wrap">
+                <TextBox.Header>
+                    <TextBlock Foreground="{ThemeResource GradientTextBrush}" Text="Opacity" />
+                </TextBox.Header>
                 <interact:Interaction.Behaviors>
                     <behave:KeyDownTriggerBehavior Key="Enter">
                         <interactcore:InvokeCommandAction Command="{x:Bind ViewModel.KeyDownCommand}" CommandParameter="{x:Bind root}" />
@@ -201,36 +220,12 @@
             </TextBox>
             <!--#endregion-->
 
-            <!--#region [Startup Launch]-->
-            <ToggleSwitch
-                x:Name="tsAutoStart"
-                Margin="1,10,0,0"
-                HorizontalAlignment="Left"
-                Header=""
-                IsOn="False"
-                OffContent="Login Start Disabled"
-                OnContent="Login Start Enabled"
-                Style="{ThemeResource GlowSwitch}"
-                ToolTipService.ToolTip="NOT IMPLEMENTED (in development)" />
-            <!--#endregion-->
-
-            <!--#region [Logging]-->
-            <ToggleSwitch
-                x:Name="tsLogging"
-                Margin="1,1,0,0"
-                HorizontalAlignment="Left"
-                Header=""
-                IsOn="{x:Bind ViewModel.Config.logging, Mode=TwoWay}"
-                OffContent="Logging Disabled"
-                OnContent="Logging Enabled"
-                Style="{ThemeResource GlowSwitch}" />
-            <!--#endregion-->
-
             <!--#region [Button Position]-->
             <ToggleSwitch
                 x:Name="tsCtrlRow"
-                Margin="1,1,0,0"
+                Margin="1,10,0,0"
                 HorizontalAlignment="Left"
+                Foreground="{ThemeResource GradientTextBrush}"
                 Header=""
                 IsOn="{x:Bind ViewModel.Config.ctrlRowBottom, Mode=TwoWay}"
                 OffContent="Controls Above Widget"
@@ -243,6 +238,7 @@
                 x:Name="tsHisto"
                 Margin="1,1,0,0"
                 HorizontalAlignment="Left"
+                Foreground="{ThemeResource GradientTextBrush}"
                 Header=""
                 IsOn="{x:Bind ViewModel.Config.useHistogram, Mode=TwoWay}"
                 OffContent="Histogram Disabled"
@@ -251,7 +247,34 @@
                 ToolTipService.ToolTip="Requires app restart" />
             <!--#endregion-->
 
-            <ctrl:SeparatorLine Margin="1,5,-20,0" />
+            <!--#region [Logging]-->
+            <ToggleSwitch
+                x:Name="tsLogging"
+                Margin="1,1,0,0"
+                HorizontalAlignment="Left"
+                Foreground="{ThemeResource GradientTextBrush}"
+                Header=""
+                IsOn="{x:Bind ViewModel.Config.logging, Mode=TwoWay}"
+                OffContent="Logging Disabled"
+                OnContent="Logging Enabled"
+                Style="{ThemeResource GlowSwitch}" />
+            <!--#endregion-->
+
+            <!--#region [Startup Launch]-->
+            <ToggleSwitch
+                x:Name="tsAutoStart"
+                Margin="1,1,0,0"
+                HorizontalAlignment="Left"
+                Foreground="{ThemeResource GradientTextBrush}"
+                Header=""
+                IsOn="False"
+                OffContent="Login Start Disabled"
+                OnContent="Login Start Enabled"
+                Style="{ThemeResource GlowSwitch}"
+                ToolTipService.ToolTip="NOT IMPLEMENTED (in development)" />
+            <!--#endregion-->
+
+            <ctrl:SeparatorLine Margin="1,5,0,0" />
 
             <!--#region [Logo Icon]-->
             <Image

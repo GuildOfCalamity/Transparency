@@ -8,7 +8,7 @@
 
 * Demonstration of transparent [WinUI3](https://learn.microsoft.com/en-us/windows/apps/winui/winui3) [Window](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.window?view=windows-app-sdk-1.5) widget.
 * This feature is trivial when using the [AllowsTransparency](https://learn.microsoft.com/en-us/dotnet/api/system.windows.window.allowstransparency?view=windowsdesktop-8.0#remarks) property in **WPF**; but since the **WinUI3** Window is meant for x-plat purposes we do not have that luxury. 
-* I've also added an example of an [Desktop Acrylic Controller](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.composition.systembackdrops.desktopacryliccontroller?view=windows-app-sdk-1.5) for the settings window.
+* I've also added an example of a [Desktop Acrylic Controller](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.composition.systembackdrops.desktopacryliccontroller?view=windows-app-sdk-1.5) for the settings window.
 * Other [Nuget](https://learn.microsoft.com/en-us/nuget/what-is-nuget) packages include:
 	- "CommunityToolkit.Mvvm" Version="8.2.2"
 	- "CommunityToolkit.WinUI" Version="7.1.2"
@@ -25,7 +25,7 @@
 
 ## 🎛️ Usage
 * This application was intended to be run unpackaged, but I have added checks for running in packaged format as well.
-* Upon first run the `TransparencyConfig.json` settings file will be created. During runtime, these settings can be adjusted from the `ConfigWindow.xaml`
+* Upon first run the `TransparencyConfig.json` settings file will be created. During runtime, these settings can be adjusted from the `ConfigWindow.xaml` by clicking on the gear icon.
 
 ## 🧾 License/Warranty
 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish and distribute copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.

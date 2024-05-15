@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -21,6 +21,7 @@ using Transparency.Support;
 using Transparency.Helpers;
 using Transparency.ViewModels;
 using Transparency.Services;
+
 
 namespace Transparency;
 
@@ -68,6 +69,23 @@ public partial class App : Application
             }
         }
     }
+
+    Windows.Globalization.DateTimeFormatting.DateTimeFormatter? _formatter;
+    /// <summary>
+    /// https://learn.microsoft.com/en-us/uwp/api/windows.globalization.datetimeformatting.datetimeformatter?view=winrt-22621#remarks
+    /// </summary>
+    public Windows.Globalization.DateTimeFormatting.DateTimeFormatter? Formatter
+    {
+        get 
+        { 
+            if (_formatter == null)
+                _formatter = new Windows.Globalization.DateTimeFormatting.DateTimeFormatter("longdate longtime");
+            
+            return _formatter; 
+        }
+    }
+
+
     #endregion
 
     #region [Config]
@@ -84,13 +102,14 @@ public partial class App : Application
     {
         if (cfg is not null)
         {
-            if (App.MainRoot is not null)
-                cfg.theme = $"{ThemeRequested}";
             cfg.firstRun = false;
             cfg.time = DateTime.Now;
             cfg.version = $"{GetCurrentAssemblyVersion()}";
+            if (App.MainRoot is not null) { cfg.theme = $"{ThemeRequested}"; }
+            if (string.IsNullOrEmpty(cfg.background)) { cfg.background = "001f1f1f"; }
+            if (cfg.opacity == 0.0) { cfg.opacity = 0.5; }
             Process proc = Process.GetCurrentProcess();
-            cfg.metrics = $"Process used {proc.PrivateMemorySize64 / 1024 / 1024}MB of memory and {proc.TotalProcessorTime.ToReadableString()} TotalProcessorTime on {Environment.ProcessorCount} possible cores.";
+            cfg.metrics = $"Process used {proc.PrivateMemorySize64/1024/1024}MB of memory and {proc.TotalProcessorTime.ToReadableString()} TotalProcessorTime on {Environment.ProcessorCount} possible cores.";
             try
             {
                 _ = ConfigHelper.SaveConfig(cfg);
@@ -122,6 +141,12 @@ public partial class App : Application
         Services = ConfigureServices();
 
         this.InitializeComponent();
+
+        Debug.WriteLine($"[INFO] {GetCurrentFullName()} ⇒ {Formatter?.Format(DateTimeOffset.Now)}");
+        
+        GetLanguageRecommendedFonts();
+        TestCurrencyFormatter();
+        TestPercentFormatter();
     }
 
     private static IServiceProvider ConfigureServices()
@@ -276,12 +301,187 @@ public partial class App : Application
             Debug.WriteLine($"[INFO] Moving window to previous position {LocalConfig.windowX},{LocalConfig.windowY} with size {LocalConfig.windowW},{LocalConfig.windowH}");
             //appWin?.Move(new Windows.Graphics.PointInt32(LocalConfig.windowX, LocalConfig.windowY));
             if (LocalConfig.useHistogram)
-                appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW, LocalConfig.windowH >= 210 ? LocalConfig.windowH : 210 ), Microsoft.UI.Windowing.DisplayArea.Primary);
+                appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW, LocalConfig.windowH >= 220 ? LocalConfig.windowH : 220 ), Microsoft.UI.Windowing.DisplayArea.Primary);
             else
                 appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW, LocalConfig.windowH), Microsoft.UI.Windowing.DisplayArea.Primary);
         }
         #endregion
     }
+
+    #region [Font Recommendations]
+    /* [FontWeight Explained] https://learn.microsoft.com/en-us/uwp/api/windows.ui.text.fontweights?view=winrt-22621#remarks
+        ExtraBlack... 950
+        Black........ 900
+        ExtraBold.... 800
+        Bold......... 700
+        SemiBold..... 600
+        Medium....... 500
+        Normal....... 400
+        SimiLight.... 350
+        Light........ 300
+        ExtraLight... 200
+        Thin......... 100
+    */
+    Dictionary<ushort, string> _fontWeights = new()
+    { 
+        { 100, "Thin"       },
+        { 200, "ExtraLight" },
+        { 300, "Light"      },
+        { 350, "SemiLight"  },
+        { 400, "Normal"     },
+        { 500, "Medium"     },
+        { 600, "SemiBold"   },
+        { 700, "Bold"       },
+        { 800, "ExtraBold"  },
+        { 900, "Black"      },
+        { 950, "ExtraBlack" },
+    };
+
+    /// <summary>
+    /// Get the recommended fonts based on the language.
+    /// </summary>
+    /// <remarks>
+    /// https://learn.microsoft.com/en-us/uwp/api/windows.globalization.fonts.languagefont?view=winrt-22621
+    /// </remarks>
+    public void GetLanguageRecommendedFonts(string langTag = "en-US")
+    {
+        if (string.IsNullOrEmpty(langTag))
+            return;
+
+        var fonts = new Windows.Globalization.Fonts.LanguageFontGroup(langTag);
+
+        // The FontWeight is not the same as the FontStyle. FontStyle can be Normal, Oblique or Italic.
+        // Oblique & Italic are not the same ⇒ https://en.wikipedia.org/wiki/Oblique_type
+
+        var fixedWidthFont = fonts.FixedWidthTextFont;
+        Debug.WriteLine($"[INFO] Fixed width font family ⇒ {fixedWidthFont.FontFamily}");
+        Debug.WriteLine($"[INFO] Fixed width font weight ⇒ {_fontWeights[fixedWidthFont.FontWeight.Weight]}");
+        var fixedWidthFontScale = fixedWidthFont.ScaleFactor == 0 ? 100 : fixedWidthFont.ScaleFactor;
+
+        var uiTextFont = fonts.UITextFont;
+        Debug.WriteLine($"[INFO] UI text font family ⇒ {uiTextFont.FontFamily}");
+        Debug.WriteLine($"[INFO] UI text font weight ⇒ {_fontWeights[uiTextFont.FontWeight.Weight]}");
+        var uiTextFontFontScale = uiTextFont.ScaleFactor == 0 ? 100 : uiTextFont.ScaleFactor;
+
+        var traditionalDocumentFont = fonts.TraditionalDocumentFont;
+        Debug.WriteLine($"[INFO] Traditional document font family ⇒ {traditionalDocumentFont.FontFamily}");
+        Debug.WriteLine($"[INFO] Traditional document font weight ⇒ {_fontWeights[traditionalDocumentFont.FontWeight.Weight]}");
+        var traditionalDocumentFontScale = traditionalDocumentFont.ScaleFactor == 0 ? 100 : traditionalDocumentFont.ScaleFactor;
+
+        var modernDocumentFont = fonts.ModernDocumentFont;
+        Debug.WriteLine($"[INFO] Modern document font family ⇒ {modernDocumentFont.FontFamily}");
+        Debug.WriteLine($"[INFO] Modern document font weight ⇒ {_fontWeights[modernDocumentFont.FontWeight.Weight]}");
+        var modernDocumentFontScale = modernDocumentFont.ScaleFactor == 0 ? 100 : modernDocumentFont.ScaleFactor;
+    }
+    #endregion
+
+    #region [Globalization Testing]
+    /// <summary>
+    /// Some portions of this method are from https://github.com/microsoft/Windows-universal-samples/blob/main/Samples/NumberFormatting/cs/Scenario3_CurrencyFormatting.xaml.cs
+    /// </summary>
+    /// <remarks>
+    /// Other formatting examples https://github.com/microsoft/Windows-universal-samples/tree/main/Samples/NumberFormatting/cs
+    /// </remarks>
+    public void TestCurrencyFormatter()
+    {
+        double amount = 56789.01;
+        string currency = Windows.System.UserProfile.GlobalizationPreferences.Currencies[0]; // the current user's default currency
+        StringBuilder results = new StringBuilder();
+
+        Windows.Globalization.NumberFormatting.CurrencyFormatter defaultFormatter = new Windows.Globalization.NumberFormatting.CurrencyFormatter(currency);
+        Windows.Globalization.NumberFormatting.CurrencyFormatter usdFormatter = new Windows.Globalization.NumberFormatting.CurrencyFormatter(Windows.Globalization.CurrencyIdentifiers.USD);
+        Windows.Globalization.NumberFormatting.CurrencyFormatter eurFormatter = new Windows.Globalization.NumberFormatting.CurrencyFormatter(Windows.Globalization.CurrencyIdentifiers.EUR);
+
+        results.AppendLine("Original value: " + amount);
+        results.AppendLine("With user's default currency: " + defaultFormatter.Format(amount));
+        results.AppendLine("Formatted US Dollar: " + usdFormatter.Format(amount));
+
+        usdFormatter.FractionDigits = 2;
+        results.AppendLine("Formatted US Dollar (with two fractional digits): " + usdFormatter.Format(amount));
+
+        usdFormatter.IsGrouped = true;
+        results.AppendLine("Formatted US Dollar (with grouping separators): " + usdFormatter.Format(amount));
+
+        usdFormatter.FractionDigits = 2;
+        results.AppendLine("Formatted Euro (with two fractional digits): " + eurFormatter.Format(amount));
+
+        eurFormatter.IsGrouped = true;
+        results.AppendLine("Formatted Euro (with grouping separators): " + eurFormatter.Format(amount));
+
+        Debug.WriteLine($"[INFO] Currency Formatting Test ⇒");
+        Debug.WriteLine($"{results}");
+    }
+
+    public void TestPercentFormatter()
+    {
+        float amount = 5f;
+
+        Windows.Globalization.NumberFormatting.PercentFormatter formatter = new();
+        formatter.SignificantDigits = 1;
+        formatter.FractionDigits = 1;
+        formatter.IntegerDigits = 1;
+        formatter.IsDecimalPointAlwaysDisplayed = false;
+        formatter.IsGrouped = false;
+        var result = formatter.Format(amount/100);
+        Debug.WriteLine($"[INFO] Windows.Globalization ⇒ {result}");
+
+        System.Globalization.NumberFormatInfo percentageFormat = new() { PercentPositivePattern = 1, PercentNegativePattern = 1 };
+        string val = (amount/100).ToString("P0", percentageFormat);
+        Debug.WriteLine($"[INFO] System.Globalization ⇒ {val}");
+
+        System.Globalization.NumberFormatInfo nfi1 = System.Globalization.NumberFormatInfo.CurrentInfo;
+        System.Globalization.NumberFormatInfo nfi2 = System.Globalization.CultureInfo.CurrentCulture.NumberFormat;
+        PropertyInfo[] props = nfi1.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        Debug.WriteLine("[INFO] Properties of NumberFormat.CurrentInfo: ");
+        foreach (var prop in props)
+        {
+            if (prop.PropertyType.IsArray)
+            {
+                Array? arr = prop.GetValue(nfi1) as Array;
+                Debug.Write(string.Format("   {0}: ", prop.Name) + "{ ");
+                if (arr is null) { continue; }
+                int ctr = 0;
+                foreach (var item in arr)
+                {
+                    Debug.Write(string.Format("{0}{1}", item, ctr == arr.Length - 1 ? " }" : ", "));
+                    ctr++;
+                }
+                Debug.WriteLine("");
+            }
+            else
+            {
+                Debug.WriteLine(string.Format("   {0}: {1}", prop.Name, prop.GetValue(nfi1)));
+            }
+        }
+    }
+
+    /// <summary>
+    /// This enumeration supports a bitwise combination of its member values.
+    /// https://learn.microsoft.com/en-us/dotnet/api/system.globalization.numberstyles?view=net-8.0#fields
+    /// </summary>
+    public void TestNumberStyles()
+    {
+        // Parse the string as a hex value and display the value as a decimal.
+        var num = "A";
+        int val = int.Parse(num, System.Globalization.NumberStyles.HexNumber);
+        Debug.WriteLine(string.Format("{0} in hex = {1} in decimal.", num, val));
+
+        // Parse the string, allowing a leading sign, and ignoring leading and trailing white spaces.
+        num = "    -45   ";
+        val = int.Parse(num, System.Globalization.NumberStyles.AllowLeadingSign |
+                             System.Globalization.NumberStyles.AllowLeadingWhite | 
+                             System.Globalization.NumberStyles.AllowTrailingWhite);
+        Debug.WriteLine(string.Format("'{0}' parsed to an int is '{1}'.", num, val));
+
+        // Parse the string, allowing parentheses, and ignoring leading and trailing white spaces.
+        num = "    (37)   ";
+        val = int.Parse(num, System.Globalization.NumberStyles.AllowParentheses | 
+                             System.Globalization.NumberStyles.AllowLeadingSign | 
+                             System.Globalization.NumberStyles.AllowLeadingWhite | 
+                             System.Globalization.NumberStyles.AllowTrailingWhite);
+        Debug.WriteLine(string.Format("'{0}' parsed to an int is '{1}'.", num, val));
+    }
+    #endregion
 
     #region [Window Helpers]
     /// <summary>
@@ -296,7 +496,7 @@ public partial class App : Application
         // Retrieve the window handle (HWND) of the current (XAML) WinUI3 window.
         var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
 
-        // For other classes to use (mostly P/Invoke).
+        // For other callers, e.g. P/Invoke.
         App.WindowHandle = hWnd;
 
         // Retrieve the WindowId that corresponds to hWnd.
@@ -354,7 +554,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"GetDisplayArea: {ex.Message}");
+            Debug.WriteLine($"[ERROR] {MethodBase.GetCurrentMethod()?.Name}: {ex.Message}");
             return null;
         }
     }
@@ -363,7 +563,6 @@ public partial class App : Application
     #region [Domain Events]
     void ApplicationUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        // TODO: Log and handle exceptions as appropriate.
         // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
         Exception? ex = e.Exception;
         Debug.WriteLine($"[UnhandledException]: {ex?.Message}");
@@ -396,7 +595,7 @@ public partial class App : Application
         DebugLog($"First chance exception from {sender?.GetType()}: {e.Exception.Message}");
         if (e.Exception.InnerException != null)
             DebugLog($"  ⇨ InnerException: {e.Exception.InnerException.Message}");
-        DebugLog($"First Chance Exception StackTrace: {Environment.StackTrace}");
+        DebugLog($"First chance exception StackTrace: {Environment.StackTrace}");
         DebugLog($"{e.Exception.DumpFrames()}");
     }
 
@@ -431,8 +630,12 @@ public partial class App : Application
     public static string? GetCurrentNamespace() => System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Namespace;
 
     /// <summary>
+    /// Returns the declaring type's full name.
+    /// </summary>
+    public static string? GetCurrentFullName() => System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Assembly.FullName;
+
+    /// <summary>
     /// Returns the declaring type's assembly name.
-    /// Similar ⇨ System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Assembly.FullName
     /// </summary>
     public static string? GetCurrentAssemblyName() => System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
 

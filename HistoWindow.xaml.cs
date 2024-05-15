@@ -61,6 +61,7 @@ public sealed partial class HistoWindow : Window
         SystemBackdrop = new TransparentBackdrop();
         Content.Background = new SolidColorBrush(Colors.Green);
         Content.Background = new SolidColorBrush(Colors.Transparent);
+        //Content.Background = (SolidColorBrush)App.Current.Resources["ApplicationPageBackgroundThemeBrush"];
     }
 
     void MainWindow_Activated(object sender, WindowActivatedEventArgs args)

@@ -53,6 +53,13 @@
             <Color x:Key="LinearBorder6">#7FA0A0A0</Color>
             <Color x:Key="LinearBorder7">#7F606060</Color>
             <Color x:Key="LinearBorder8">#7F242424</Color>
+            <Color x:Key="AlphaShadow1">#7F242424</Color>
+            <Color x:Key="AlphaShadow2">#7F161616</Color>
+            <Color x:Key="AlphaShadow3">#7F090909</Color>
+            <Color x:Key="AlphaShadow4">#7F000000</Color>
+            <Color x:Key="Header1">#efefef</Color>
+            <Color x:Key="Header2">#afafaf</Color>
+            <Color x:Key="Header3">#858585</Color>
 
             <media:AcrylicBrush
                 x:Key="RevealBorderBrush"
@@ -64,6 +71,7 @@
             <Brush x:Key="PrimaryBrush">#96d9ff</Brush>
             <Brush x:Key="SecondaryBrush">#469cdf</Brush>
             <Brush x:Key="BackgroundBrush">#1a1a1a</Brush>
+            <Brush x:Key="HeaderBrush">#999999</Brush>
 
             <SolidColorBrush x:Key="SortHvidBrush" Color="#C0202020" />
             <SolidColorBrush x:Key="11Brush" Color="#111111" />
@@ -90,6 +98,20 @@
                 <GradientStop Offset="0.75" Color="{StaticResource LinearBorder7}" />
                 <GradientStop Offset="1.0" Color="{StaticResource LinearBorder8}" />
             </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="GradientShadowBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0.0" Color="{StaticResource AlphaShadow1}" />
+                <GradientStop Offset="0.25" Color="{StaticResource AlphaShadow2}" />
+                <GradientStop Offset="0.75" Color="{StaticResource AlphaShadow3}" />
+                <GradientStop Offset="1.0" Color="{StaticResource AlphaShadow4}" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="GradientTextBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0.0" Color="{StaticResource Header1}" />
+                <GradientStop Offset="0.6" Color="{StaticResource Header2}" />
+                <GradientStop Offset="1.0" Color="{StaticResource Header3}" />
+            </LinearGradientBrush>
+
             <!--#endregion-->
 
             <!--#region [Radial Gauge Brushes]-->

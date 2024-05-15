@@ -67,6 +67,7 @@ public sealed partial class MainWindow : Window
         SystemBackdrop = new TransparentBackdrop();
         Content.Background = new SolidColorBrush(Colors.Green);
         Content.Background = new SolidColorBrush(Colors.Transparent);
+        //Content.Background = (SolidColorBrush)App.Current.Resources["ApplicationPageBackgroundThemeBrush"];
 
         if (App.IsPackaged)
         {

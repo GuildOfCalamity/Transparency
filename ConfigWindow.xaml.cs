@@ -76,9 +76,13 @@ public sealed partial class ConfigWindow : Window
             _acrylicController.TintColor = Microsoft.UI.Colors.Gray;
             // Fall-back color is only used when the window state becomes deactivated.
             _acrylicController.FallbackColor = Microsoft.UI.Colors.Transparent;
-            // Note: Be sure to have "using WinRT;" to support the Window.As<...>() call.
+            // Note: Be sure to have "using WinRT;" to support the Window.As<T>() call.
             _acrylicController.AddSystemBackdropTarget(this.As<Microsoft.UI.Composition.ICompositionSupportsSystemBackdrop>());
             _acrylicController.SetSystemBackdropConfiguration(_configurationSource);
+        }
+        else
+        {
+            root.Background = (SolidColorBrush)App.Current.Resources["ApplicationPageBackgroundThemeBrush"];
         }
     }
 
@@ -92,11 +96,11 @@ public sealed partial class ConfigWindow : Window
             _acrylicController = null;
         }
     }
+
     void ConfigWindow_Activated(object sender, WindowActivatedEventArgs args)
     {
         if (args.WindowActivationState != WindowActivationState.Deactivated)
         {
-
             if (ViewModel!.Config!.logging)
                 Logger?.WriteLine($"The config window was {args.WindowActivationState}.", LogLevel.Debug);
 
@@ -112,16 +116,22 @@ public sealed partial class ConfigWindow : Window
         }
     }
 
+    /// <summary>
+    /// We're handling this in the <see cref="Transparency.Behaviors.OpacityAnimationBehavior"/> now.
+    /// </summary>
     public void BeginStoryboard()
     {
-        if (App.AnimationsEffectsEnabled)
-            OpacityStoryboard.Begin();
+        //if (App.AnimationsEffectsEnabled)
+        //    OpacityStoryboard.Begin();
     }
 
+    /// <summary>
+    /// We're handling this in the <see cref="Transparency.Behaviors.OpacityAnimationBehavior"/> now.
+    /// </summary>
     public void EndStoryboard()
     {
-        if (App.AnimationsEffectsEnabled)
-            OpacityStoryboard.SkipToFill(); //OpacityStoryboard.Stop();
+        //if (App.AnimationsEffectsEnabled)
+        //    OpacityStoryboard.SkipToFill(); //OpacityStoryboard.Stop();
     }
 
     /// <summary>
@@ -137,5 +147,20 @@ public sealed partial class ConfigWindow : Window
             infoBar.Severity = severity;
             infoBar.Message = $"{message}";
         });
+    }
+
+    public void ApplyLanguageFont(TextBlock textBlock, string language) => ApplyLanguageFont(textBlock, new Windows.Globalization.Fonts.LanguageFontGroup(language).UITextFont);
+    public void ApplyLanguageFont(TextBlock textBlock, Windows.Globalization.Fonts.LanguageFont? langFont)
+    {
+        if (langFont == null)
+        {
+            var langFontGroup = new Windows.Globalization.Fonts.LanguageFontGroup("en-US");
+            langFont = langFontGroup.UITextFont;
+        }
+        FontFamily fontFamily = new FontFamily(langFont.FontFamily);
+        textBlock.FontFamily = fontFamily;
+        textBlock.FontWeight = langFont.FontWeight;
+        textBlock.FontStyle = langFont.FontStyle;
+        textBlock.FontStretch = langFont.FontStretch;
     }
 }

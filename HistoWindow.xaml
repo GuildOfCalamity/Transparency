@@ -11,7 +11,12 @@
     xmlns:model="using:Transparency.Models"
     x:Name="ThisWindow"
     mc:Ignorable="d">
-
+    <!--
+        We want the window to be hit testable so the user can resize/move it as desired.
+        In WPF the AllowsTransparency flag would allow for pass-through pointer activity,
+        e.g. clicking an icon behind the transparency. This is not the case in a WinUI3
+        transparency when using the API calls for SystemBackdrop.
+    -->
     <Grid
         x:Name="Content"
         BorderBrush="{ThemeResource GradientBorderBrush}"
@@ -50,17 +55,17 @@
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <!--
-                            The ListViewItem Width property seems to be fixed in the control, so
-                            to make the bars closer I'm overcompensating via the Margin property.
-                            I also tried binding the opacity here, but the control did not like
-                            that, so I have moved the property into the NamedColor model for
-                            accessibility inside the DataTemplate/ListViewItem.
+                            The ListViewItem Width property seems to be fixed in the base control styler,
+                            so to make the bars closer I'm overcompensating via the Margin property.
+                            I also tried binding the opacity here but the control did not like that,
+                            so I have moved the property into the NamedColor model for accessibility
+                            inside the DataTemplate/ListViewItem.
                         -->
-                        <Setter Property="Margin" Value="0,0,-50,10" />
-                        <Setter Property="Padding" Value="0,0,0,0" />
+                        <Setter Property="Margin" Value="0,0,-55,10" />
+                        <Setter Property="Padding" Value="0" />
                         <Setter Property="BorderThickness" Value="0" />
                         <Setter Property="MinHeight" Value="40" />
-                        <Setter Property="MaxWidth" Value="20" />
+                        <Setter Property="MaxWidth" Value="21" />
                         <Setter Property="IsHitTestVisible" Value="False" />
                         <Setter Property="VerticalContentAlignment" Value="Bottom" />
                     </Style>
@@ -68,7 +73,11 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="model:NamedColor">
                         <ListViewItem Margin="0">
-                            <Grid BorderThickness="0" RowDefinitions="Auto,*">
+                            <Grid BorderThickness="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
                                 <Grid.Resources>
                                     <ThemeShadow x:Name="SharedShadow" />
                                 </Grid.Resources>
@@ -80,6 +89,10 @@
                                     FontSize="{StaticResource FontSizeSmall}"
                                     Opacity="{Binding Opacity, Mode=OneWay}"
                                     Text="{x:Bind Amount, Mode=OneWay}" />
+                                <!--
+                                    Our bar width is based on the percentage font placement.
+                                    The bar needs to be wide enough to accommodate the text.
+                                -->
                                 <Rectangle
                                     Grid.Row="1"
                                     Width="21"

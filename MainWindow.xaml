@@ -9,6 +9,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     x:Name="ThisWindow"
     mc:Ignorable="d">
+    <!--
+        We want the window to be hit testable so the user can resize/move it as desired.
+        In WPF the AllowsTransparency flag would allow for pass-through pointer activity,
+        e.g. clicking an icon behind the transparency. This is not the case in a WinUI3
+        transparency when using the API calls for SystemBackdrop.
+    -->
     <Grid
         x:Name="Content"
         BorderBrush="{ThemeResource GradientBorderBrush}"

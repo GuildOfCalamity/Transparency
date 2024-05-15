@@ -2,8 +2,6 @@
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 
-// The Templated Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234235
-
 namespace Transparency.Icons;
 
 public partial class FluentSymbolIcon : Control
@@ -91,13 +89,12 @@ public partial class FluentSymbolIcon : Control
     /// </summary>
     public static Geometry? GetPathData(FluentSymbol symbol)
     {
-        if (AllFluentIcons.TryGetValue(symbol, out string pathData))
+        if (AllFluentIcons.TryGetValue(symbol, out string? pathData))
         {
-            return (Geometry)Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(typeof(Geometry), pathData);
+            if (!string.IsNullOrEmpty(pathData))
+                return (Geometry)Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(typeof(Geometry), pathData);
         }
-        else
-        {
-            return null;
-        }
+
+        return null;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -11,33 +12,31 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.Extensions.DependencyInjection;
 
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using Transparency.Support;
 using Transparency.Helpers;
 using Transparency.Services;
-
-using CommunityToolkit.Mvvm.Input;
-using static System.Net.Mime.MediaTypeNames;
 using Transparency.Controls;
 using Transparency.Models;
-using System.Collections.ObjectModel;
+using System.Threading;
+using Microsoft.UI.Xaml.Controls;
+
+
 
 namespace Transparency.ViewModels;
 
 public class MainViewModel : ObservableRecipient
 {
     #region [Props]
+    static Uri _dialogImgUri = new Uri($"ms-appx:///Assets/Warning.png");
     static DispatcherTimer? _timer;
 
     // Only possible due to our System.Diagnostics.PerformanceCounter NuGet (sadly .NET Core does not offer the PerformanceCounter)
     PerformanceCounter? _perfCPU;
-    SolidColorBrush _level1;
-    SolidColorBrush _level2;
-    SolidColorBrush _level3;
-    SolidColorBrush _level4;
-    SolidColorBrush _level5;
-    SolidColorBrush _level6;
-
+    SolidColorBrush _level1; SolidColorBrush _level2; SolidColorBrush _level3;
+    SolidColorBrush _level4; SolidColorBrush _level5; SolidColorBrush _level6;
+    System.Globalization.NumberFormatInfo _formatter;
 
     public ObservableCollection<NamedColor> NamedColors = new();
 
@@ -140,11 +139,18 @@ public class MainViewModel : ObservableRecipient
     {
         Debug.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{System.Reflection.MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
 
+        // https://learn.microsoft.com/en-us/dotnet/api/system.globalization.numberformatinfo?view=net-8.0
+        _formatter = System.Globalization.NumberFormatInfo.CurrentInfo;
+
         if (App.LocalConfig is not null)
         {
             Interval = App.LocalConfig.msRefresh;
             _borderSize = new Thickness(App.LocalConfig.borderSize);
             _opacity = App.LocalConfig.opacity;
+            if (App.LocalConfig.useHistogram)
+                Status = "Loading, please wait…";
+            else
+                Status = "Loading…"; // we don't have much real estate w/r/t gauge
         }
         else
         {
@@ -155,10 +161,13 @@ public class MainViewModel : ObservableRecipient
         KeyDownCommand = new RelayCommand<object>(async (obj) =>
         {
             IsBusy = true;
-            #region [KeyDownTriggerBehavior Testing]
-            // It's considered poor form to play with UI controls from the ViewModel, but
-            // this was a fun exercise and there are use-cases where this might be desired.
+            #region [Transparency.Behaviors.KeyDownTriggerBehavior Testing]
+            // If we got here then the user has pressed the [Enter] key.
+            // It's considered poor form to play with UI controls from the VM, but this
+            // was a fun exercise and there are use-cases where this might be desired.
+            // In this example we want an ICommand tied to the key press while the control has focus.
             // This is currently used as a validation step to demo the KeyDownTriggerBehavior.
+            // You could also perform the validation in the code-behind for the ConfigWindow.
             if (obj is Microsoft.UI.Xaml.Controls.Grid grid)
             {
                 foreach (var uie in grid.Children)
@@ -172,6 +181,7 @@ public class MainViewModel : ObservableRecipient
                     else if (uie.GetType() == typeof(Microsoft.UI.Xaml.Controls.StackPanel))
                     {
                         var sp = (Microsoft.UI.Xaml.Controls.StackPanel)uie;
+                        if (sp == null) { continue; }
                         foreach (var e in sp.Children)
                         {
                             if (e.GetType() == typeof(Microsoft.UI.Xaml.Controls.TextBox))
@@ -184,13 +194,13 @@ public class MainViewModel : ObservableRecipient
                                         if (App.LocalConfig is not null && int.TryParse(tb.Text, out int refresh))
                                             App.LocalConfig.msRefresh = refresh;
                                         else
-                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, _dialogImgUri);
                                         break;
                                     case string name when name.ToLower().Contains("color"):
                                         if (App.LocalConfig is not null && !string.IsNullOrEmpty(tb.Text))
                                             App.LocalConfig.background = tb.Text.Trim().Replace("#", "");
                                         else
-                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, _dialogImgUri);
                                         break;
                                     case string name when name.ToLower().Contains("border"):
                                         if (App.LocalConfig is not null && int.TryParse(tb.Text, out int size))
@@ -199,13 +209,13 @@ public class MainViewModel : ObservableRecipient
                                             BorderSize = new Thickness(size);
                                         }
                                         else
-                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, _dialogImgUri);
                                         break;
                                     case string name when name.ToLower().Contains("opacity"):
                                         if (App.LocalConfig is not null && double.TryParse(tb.Text, out double opac))
                                             App.LocalConfig.opacity = Opacity = opac;
                                         else
-                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                            await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, _dialogImgUri);
                                         break;
                                     default:
                                         Debug.WriteLine($"[INFO] 📢 No switch case defined for \"{tb.Name}\"");
@@ -282,38 +292,38 @@ public class MainViewModel : ObservableRecipient
                             if (App.LocalConfig is not null && int.TryParse(tb.Text, out int refresh))
                             {
                                 App.LocalConfig.msRefresh = refresh;
-                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, _dialogImgUri);
                             }
                             else
-                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, _dialogImgUri);
                             break;
                         case string name when name.ToLower().Contains("color"):
                             if (App.LocalConfig is not null && !string.IsNullOrEmpty(tb.Text))
                             {
                                 App.LocalConfig.background = tb.Text.Trim().Replace("#","");
-                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, _dialogImgUri);
                             }
                             else
-                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, _dialogImgUri);
                             break;
                         case string name when name.ToLower().Contains("border"):
                             if (App.LocalConfig is not null && int.TryParse(tb.Text, out int size))
                             {
                                 App.LocalConfig.borderSize = size;
                                 BorderSize = new Thickness(size);
-                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, _dialogImgUri);
                             }
                             else
-                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, _dialogImgUri);
                             break;
                         case string name when name.ToLower().Contains("opacity"):
                             if (App.LocalConfig is not null && double.TryParse(tb.Text, out double opac))
                             {
                                 App.LocalConfig.opacity = opac;
-                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                await App.ShowDialogBox(tb.XamlRoot, "Updated", $"⚙️ {name} value is now \"{tb.Text}\"", "OK", "", null, null, _dialogImgUri);
                             }
                             else
-                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, new Uri($"ms-appx:///Assets/WinTransparent.png"));
+                                await App.ShowDialogBox(tb.XamlRoot, "Warning", $"⚙️ {name} value is invalid", "OK", "", null, null, _dialogImgUri);
                             break;
                         default:
                             Debug.WriteLine($"[INFO] 📢 No switch case defined for \"{tb.Name}\"");
@@ -382,6 +392,30 @@ public class MainViewModel : ObservableRecipient
         #endregion
     }
 
+    #region [SyncContext]
+    Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext? _context;
+    void TestDispatcherQueueSynchronizationContext(FrameworkElement fe)
+    {
+        var dis = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        if (dis is not null)
+        {
+            _context = new Microsoft.UI.Dispatching.DispatcherQueueSynchronizationContext(dis);
+            SynchronizationContext.SetSynchronizationContext(_context);
+
+            // SynchronizationContext's Post() is the asynchronous method.
+            _context?.Post(o => fe.Height = 40, null); // Marshal the delegate to the UI thread
+
+            // SynchronizationContext's Send() is the synchronous method.
+            _context?.Send(_ => fe.Height = 40, null); // Marshal the delegate to the UI thread
+        }
+        else
+        {
+            // You could also use the control's dispatcher for UI calls.
+            fe.DispatcherQueue.TryEnqueue(() => fe.Height = 40);
+        }
+    }
+    #endregion
+
     void ConfigureRefreshTimer(int interval)
     {
         _timer = new DispatcherTimer();
@@ -398,8 +432,7 @@ public class MainViewModel : ObservableRecipient
 
     #region [PerfCounter]
     int _lastValue = -1;
-    bool _useLogarithm = true;
-    float GetCPU(int maxWidth = 200)
+    float GetCPU()
     {
         float newValue = 0;
 
@@ -434,7 +467,7 @@ public class MainViewModel : ObservableRecipient
                     break;
             }
 
-            float width = 0;
+            float height = 0;
 
             // Simple duplicate checking.
             if ((int)newValue != _lastValue)
@@ -442,23 +475,20 @@ public class MainViewModel : ObservableRecipient
                 _lastValue = (int)newValue;
 
                 // Auto-size rectangle graphic.
-                if (_useLogarithm)
-                {
-                    //width = ScaleValueLog(newValue);
-                    width = ScaleValueLog10(newValue);
-                }
-                else
-                {
-                    width = AmplifyLinear(newValue);
-                }
-
+                height = ScaleValueLog10(newValue);
 
                 // Opacity is not carried over from the SolidColorBrush color property accessors.
                 var clr = NeedleColor.Color;
                 var opac = App.LocalConfig != null ? App.LocalConfig.opacity : 0.75;
 
                 // Add entry for histogram.
-                NamedColors.Insert(0, new NamedColor { Height = (double)width, Amount = $"{(int)newValue}%", Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = clr, Opacity = opac });
+                NamedColors.Insert(0, new NamedColor { Height = (double)height, Amount = (newValue / 100).ToString("P0", _formatter), Time = $"{DateTime.Now.ToString("h:mm:ss tt")}", Color = clr, Opacity = opac });
+
+                // NOTE: A percent sign (%) in a format string causes a number to be multiplied by 100 before it is formatted.
+                // The localized percent symbol is inserted in the number at the location where the % appears in the format string.
+                // This is why you'll see the (newValue/100) before it is assigned.
+                // https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings#percent-format-specifier-p
+                // https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-numeric-format-strings#the--custom-specifier-3
 
                 // Monitor memory consumption.
                 if (NamedColors.Count > 100)
@@ -476,30 +506,15 @@ public class MainViewModel : ObservableRecipient
 
     /// <summary>
     /// Smaller values will be harder to see on the graph, so we'll scale them up to be more visible.
+    /// A linear model wouldn't work as well with small amounts, e.g. 1%.
     /// </summary>
-    float AmplifyLinear(float number, int maxClamp = 200)
-    {
-        if (number < 10)
-            return ((number + 1f) * 6f).Clamp(1, maxClamp);
-        else if (number < 20)
-            return ((number + 1f) * 5f).Clamp(1, maxClamp);
-        else if (number < 40)
-            return ((number + 1f) * 4f).Clamp(1, maxClamp);
-        else if (number < 60)
-            return ((number + 1f) * 3f).Clamp(1, maxClamp);
-        else if (number < 80)
-            return ((number + 1f) * 2.5f).Clamp(1, maxClamp);
-        else
-            return ((number + 1f) * 2f).Clamp(1, maxClamp);
-    }
-
     float ScaleValueLog10(float value)
     {
         // Clamp value between 1 and 100
         value = Math.Clamp(value, 1f, 100f);
 
-        // Scale the value logarithmically to a range between 1 and 200
-        float scaledValue = (float)(1 + (199 * Math.Log10(1 + (10 * value / 100)) / Math.Log10(11)));
+        // Scale the value logarithmically to a range between 1 and 150
+        float scaledValue = (float)(1 + (149 * Math.Log10(1 + (10 * value / 100)) / Math.Log10(11)));
 
         return scaledValue;
     }
