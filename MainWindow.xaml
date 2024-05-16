@@ -34,7 +34,14 @@
                 <RowDefinition Height="40" />
             </Grid.RowDefinitions>
             <interact:Interaction.Behaviors>
-                <behave:SlideAnimationBehavior Down="False" Seconds="1.5" />
+                <behave:OpacityAnimationBehavior
+                    EaseMode="QuadEaseOut"
+                    Final="1.0"
+                    Seconds="1.5" />
+                <behave:SlideAnimationBehavior
+                    Down="False"
+                    EaseMode="QuadEaseOut"
+                    Seconds="1.5" />
             </interact:Interaction.Behaviors>
 
             <!--#region [Radial Gauge]-->
@@ -83,7 +90,11 @@
                     Click="Settings_Click"
                     Foreground="{ThemeResource SystemAccentColorLight2}"
                     Opacity="{x:Bind ViewModel.Config.opacity, Mode=OneWay}"
-                    Style="{ThemeResource SettingsToolbarButton}" />
+                    Style="{ThemeResource SettingsToolbarButton}">
+                    <interact:Interaction.Behaviors>
+                        <behave:SpringAnimationBehavior Final="1.05" Seconds="0.05" />
+                    </interact:Interaction.Behaviors>
+                </Button>
                 <TextBlock
                     Grid.Column="1"
                     Margin="0,0,0,5"
@@ -103,7 +114,11 @@
                     Content="&#10006;"
                     FontSize="18"
                     Opacity="{x:Bind ViewModel.Config.opacity, Mode=OneWay}"
-                    Style="{ThemeResource ToolbarButton}" />
+                    Style="{ThemeResource ToolbarButton}">
+                    <interact:Interaction.Behaviors>
+                        <behave:SpringAnimationBehavior Final="1.05" Seconds="0.05" />
+                    </interact:Interaction.Behaviors>
+                </Button>
             </Grid>
             <!--#endregion-->
 

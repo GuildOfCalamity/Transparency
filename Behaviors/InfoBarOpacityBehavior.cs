@@ -1,6 +1,4 @@
-﻿// Ignore Spelling: penner
-
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Numerics;
 
@@ -8,23 +6,20 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Xaml.Interactivity;
 
 using Windows.Foundation;
-using Windows.System;
-using Windows.UI.Core.AnimationMetrics;
 
 namespace Transparency.Behaviors;
 
+
 /// <summary>
-/// When the <see cref="FrameworkElement"/> is loaded the translation animation will be performed.
-/// We'll consider sliding up to be transitioning into a usable state, while sliding down means to put away.
+/// <see cref="Microsoft.UI.Xaml.Controls.InfoBar"/> <see cref="Microsoft.Xaml.Interactivity.Behavior"/>.
 /// </summary>
-public class SlideAnimationBehavior : Behavior<FrameworkElement>
+public class InfoBarOpacityBehavior : Behavior<InfoBar>
 {
     #region [Props]
-    DispatcherTimer? _timer;
+    long? _iopToken;
 
     /// <summary>
     /// Identifies the <see cref="Seconds"/> property for the animation.
@@ -45,21 +40,21 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
     }
 
     /// <summary>
-    /// Identifies the <see cref="Down"/> property for the animation.
+    /// Identifies the <see cref="Final"/> property for the animation.
     /// </summary>
-    public static readonly DependencyProperty DownProperty = DependencyProperty.Register(
-        nameof(Down),
-        typeof(bool),
+    public static readonly DependencyProperty FinalProperty = DependencyProperty.Register(
+        nameof(Final),
+        typeof(double),
         typeof(SlideAnimationBehavior),
-        new PropertyMetadata(false));
+        new PropertyMetadata(1d));
 
     /// <summary>
-    /// Gets or sets the direction.
+    /// Gets or sets the amount.
     /// </summary>
-    public bool Down
+    public double Final
     {
-        get => (bool)GetValue(DownProperty);
-        set => SetValue(DownProperty, value);
+        get => (double)GetValue(FinalProperty);
+        set => SetValue(FinalProperty, value);
     }
 
     /// <summary>
@@ -88,6 +83,7 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
         if (!App.AnimationsEffectsEnabled)
             return;
 
+        _iopToken = AssociatedObject.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, IsOpenChanged);
         AssociatedObject.Loaded += AssociatedObject_Loaded;
         AssociatedObject.Unloaded += AssociatedObject_Unloaded;
     }
@@ -99,68 +95,36 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
         if (!App.AnimationsEffectsEnabled)
             return;
 
+        if (_iopToken != null)
+            AssociatedObject.UnregisterPropertyChangedCallback(InfoBar.IsOpenProperty, (long)_iopToken);
+
         AssociatedObject.Loaded -= AssociatedObject_Loaded;
         AssociatedObject.Unloaded -= AssociatedObject_Unloaded;
     }
 
     /// <summary>
-    /// <see cref="FrameworkElement"/> event.
+    /// Callback for <see cref="Microsoft.UI.Xaml.Controls.InfoBar"/> property change.
     /// </summary>
+    void IsOpenChanged(DependencyObject o, DependencyProperty p)
+    {
+        var obj = o as InfoBar;
+
+        if (obj == null || p != InfoBar.IsOpenProperty)
+            return;
+
+        if (obj.IsOpen)
+            AnimateUIElementOpacity(0, Final, TimeSpan.FromSeconds(Seconds), obj, EaseMode);
+        else
+            AnimateUIElementOpacity(Final, 0, TimeSpan.FromSeconds(Seconds), obj, EaseMode);
+    }
+
     void AssociatedObject_Loaded(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine($"[INFO] {sender.GetType().Name} loaded at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
-
-        var obj = sender as FrameworkElement;
-        if (obj is null) { return; }
-
-        if (obj.ActualHeight != double.NaN && obj.ActualHeight != 0)
-        {
-            Debug.WriteLine($"[INFO] Reported {sender.GetType().Name} height is {obj.ActualHeight} pixels");
-
-            if (!Down)
-            {
-                AnimateUIElementOffset(new Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
-            }
-            else
-            {
-                AnimateUIElementOffset(new Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode, Microsoft.UI.Composition.AnimationDirection.Reverse);
-                // If the control happens to slide down over another control then the pointer's
-                // hit test may become a problem, so we'll set the visibility property.
-                _timer = new DispatcherTimer();
-                _timer.Interval = TimeSpan.FromSeconds(Seconds);
-                _timer.Tick += (_, _) =>
-                {
-                    _timer.Stop();
-                    ((UIElement)sender).Visibility = Visibility.Collapsed;
-                };
-                _timer.Start();
-            }
-        }
-        else
-        {
-            if (!Down)
-            {
-                AnimateUIElementOffset(new Point(0, 250), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
-            }
-            else
-            {
-                AnimateUIElementOffset(new Point(0, 250), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode, Microsoft.UI.Composition.AnimationDirection.Reverse);
-                // If the control happens to slide down over another control then the pointer's
-                // hit test may become a problem, so we'll set the visibility property.
-                _timer = new DispatcherTimer();
-                _timer.Interval = TimeSpan.FromSeconds(Seconds);
-                _timer.Tick += (_, _) =>
-                {
-                    _timer.Stop();
-                    ((UIElement)sender).Visibility = Visibility.Collapsed;
-                };
-                _timer.Start();
-            }
-        }
     }
 
     /// <summary>
-    /// <see cref="FrameworkElement"/> event.
+    /// Mock disposal routine.
     /// </summary>
     void AssociatedObject_Unloaded(object sender, RoutedEventArgs e)
     {
@@ -229,7 +193,6 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
     {
         Microsoft.UI.Composition.CompositionEasingFunction easer;
         var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
         var compositor = targetVisual.Compositor;
         var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
         scaleAnimation.Direction = direction;
@@ -254,7 +217,7 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
     /// </summary>
     static Microsoft.UI.Composition.CompositionEasingFunction CreatePennerEquation(Microsoft.UI.Composition.Compositor compositor, string pennerType = "SineEaseInOut")
     {
-        System.Numerics.Vector2 controlPoint1; 
+        System.Numerics.Vector2 controlPoint1;
         System.Numerics.Vector2 controlPoint2;
         switch (pennerType)
         {

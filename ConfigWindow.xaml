@@ -40,7 +40,14 @@
         </Grid.Resources>
         <!--  We're now using our home-brew Behavior Animation instead of the Opacity Storyboard.  -->
         <interact:Interaction.Behaviors>
-            <behave:SlideAnimationBehavior Down="False" Seconds="0.7" />
+            <behave:OpacityAnimationBehavior
+                EaseMode="QuadEaseOut"
+                Final="1.0"
+                Seconds="1.0" />
+            <behave:SlideAnimationBehavior
+                Down="False"
+                EaseMode="QuadEaseOut"
+                Seconds="1.0" />
         </interact:Interaction.Behaviors>
         <!--#endregion-->
 
@@ -51,7 +58,14 @@
             Height="30"
             Margin="0">
             <interact:Interaction.Behaviors>
-                <behave:SlideAnimationBehavior Down="False" Seconds="1.5" />
+                <behave:OpacityAnimationBehavior
+                    EaseMode="QuadEaseOut"
+                    Final="1.0"
+                    Seconds="1.5" />
+                <behave:SlideAnimationBehavior
+                    Down="False"
+                    EaseMode="QuadEaseOut"
+                    Seconds="1.5" />
             </interact:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal">
                 <Image
@@ -280,13 +294,19 @@
             <Image
                 Width="60"
                 Height="60"
-                Margin="20,5,20,10"
+                Margin="20,1,20,10"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Source="ms-appx:///Assets/WinTransparent.png">
                 <interact:Interaction.Behaviors>
-                    <behave:ScaleAnimationBehavior Final="1.0" Seconds="2.0" />
-                    <behave:OpacityAnimationBehavior Final="0.5" Seconds="6.0" />
+                    <behave:ScaleAnimationBehavior
+                        EaseMode="QuadEaseOut"
+                        Final="1.0"
+                        Seconds="2.25" />
+                    <behave:OpacityAnimationBehavior
+                        EaseMode="QuadEaseOut"
+                        Final="0.5"
+                        Seconds="2.0" />
                 </interact:Interaction.Behaviors>
             </Image>
             <!--#endregion-->
@@ -295,14 +315,25 @@
         <!--#endregion-->
 
         <!--#region [AutoClose InfoBar]-->
-        <ctrl:AutoCloseInfoBar
-            x:Name="infoBar"
+        <StackPanel
             Grid.Row="1"
             Margin="6"
-            VerticalAlignment="Bottom"
-            AutoCloseInterval="4700"
-            IsOpen="False"
-            Severity="Informational" />
+            VerticalAlignment="Bottom">
+            <!--  wrapped this in a grid to support AnimateUIElementOffset  -->
+            <ctrl:AutoCloseInfoBar
+                x:Name="infoBar"
+                AutoCloseInterval="5000"
+                IsOpen="False"
+                Seconds="2.0"
+                Severity="Informational">
+                <!--<interact:Interaction.Behaviors>
+                <behave:InfoBarOpacityBehavior
+                    EaseMode="QuadEaseOut"
+                    Final="1.0"
+                    Seconds="1.1" />
+            </interact:Interaction.Behaviors>-->
+            </ctrl:AutoCloseInfoBar>
+        </StackPanel>
         <!--#endregion-->
 
     </Grid>

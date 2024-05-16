@@ -1,9 +1,13 @@
-﻿using Microsoft.UI;
+﻿// Ignore Spelling: Nullable
+
+using Microsoft.UI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -382,5 +386,23 @@ public static class Extensions
             error = ex.Message;
             return false;
         }
+    }
+
+    [Pure]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TValue CastTo<TValue>(TValue value) where TValue : unmanaged
+    {
+        return (TValue)(object)value;
+    }
+
+    [Pure]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TValue? CastToNullable<TValue>(TValue? value) where TValue : unmanaged
+    {
+        if (value is null)
+            return null;
+
+        TValue validValue = value.GetValueOrDefault();
+        return (TValue)(object)validValue;
     }
 }

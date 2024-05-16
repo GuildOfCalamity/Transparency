@@ -228,9 +228,22 @@ public class MainViewModel : ObservableRecipient
                                 if (ts == null) { continue; }
                                 Debug.WriteLine($"[INFO] 📢 ToggleSwitch \"{ts.Name}\"");
                             }
+                            else if (e.GetType() == typeof(Microsoft.UI.Xaml.Controls.StackPanel))
+                            {
+                                var isp = (Microsoft.UI.Xaml.Controls.StackPanel)e;
+                                foreach (var sub in isp.Children)
+                                {
+                                    Debug.WriteLine($"[INFO] 📢 Found sub element {sub.GetType().Name}");
+                                }
+                            }
+                            else if (e.GetType() == typeof(AutoCloseInfoBar))
+                            {
+                                ((AutoCloseInfoBar)e).Message = "Settings have been updated.";
+                                ((AutoCloseInfoBar)e).IsOpen = true;
+                            }
                             else
                             {
-                                Debug.WriteLine($"[INFO] 📢 Found {uie.GetType().Name} of base type {uie.GetType().BaseType?.Name}");
+                                Debug.WriteLine($"[INFO] 📢 Found inner {e.GetType().Name} of base type {e.GetType().BaseType?.Name}");
                             }
                         }
                     }
@@ -264,9 +277,25 @@ public class MainViewModel : ObservableRecipient
                                 break;
                         }
                     }
+                    else if (uie.GetType() == typeof(Microsoft.UI.Xaml.Controls.Grid))
+                    {
+                        var g = (Microsoft.UI.Xaml.Controls.Grid)uie;
+                        foreach (var ge in g.Children)
+                        {
+                            Debug.WriteLine($"[INFO] 📢 Found sub element {ge.GetType().Name}");
+                            if (ge.GetType() == typeof(Microsoft.UI.Xaml.Controls.StackPanel))
+                            {
+                                var isp = (Microsoft.UI.Xaml.Controls.StackPanel)ge;
+                                foreach (var sub in isp.Children)
+                                {
+                                    Debug.WriteLine($"[INFO] 📢 Found sub-sub element {sub.GetType().Name}");
+                                }
+                            }
+                        }
+                    }
                     else
                     {
-                        Debug.WriteLine($"[INFO] 📢 Found {uie.GetType().Name} of base type {uie.GetType().BaseType?.Name}");
+                        Debug.WriteLine($"[INFO] 📢 Found outer {uie.GetType().Name} of base type {uie.GetType().BaseType?.Name}");
                     }
                 }
 

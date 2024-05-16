@@ -22,7 +22,6 @@ using Transparency.Helpers;
 using Transparency.ViewModels;
 using Transparency.Services;
 
-
 namespace Transparency;
 
 /// <summary>
@@ -149,7 +148,7 @@ public partial class App : Application
         TestPercentFormatter();
     }
 
-    private static IServiceProvider ConfigureServices()
+    static IServiceProvider ConfigureServices()
     {
         var services = new ServiceCollection();
 
