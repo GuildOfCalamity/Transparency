@@ -60,6 +60,10 @@
             <Color x:Key="Header1">#efefef</Color>
             <Color x:Key="Header2">#afafaf</Color>
             <Color x:Key="Header3">#858585</Color>
+            <Color x:Key="Header4">#66BCFF</Color>
+            <Color x:Key="Header5">#4E91C4</Color>
+            <Color x:Key="Header6">#3F769E</Color>
+
 
             <media:AcrylicBrush
                 x:Key="RevealBorderBrush"
@@ -110,6 +114,12 @@
                 <GradientStop Offset="0.0" Color="{StaticResource Header1}" />
                 <GradientStop Offset="0.6" Color="{StaticResource Header2}" />
                 <GradientStop Offset="1.0" Color="{StaticResource Header3}" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="GradientValueBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0.0" Color="{StaticResource Header4}" />
+                <GradientStop Offset="0.6" Color="{StaticResource Header5}" />
+                <GradientStop Offset="1.0" Color="{StaticResource Header6}" />
             </LinearGradientBrush>
 
             <!--#endregion-->

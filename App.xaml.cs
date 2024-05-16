@@ -300,7 +300,7 @@ public partial class App : Application
             Debug.WriteLine($"[INFO] Moving window to previous position {LocalConfig.windowX},{LocalConfig.windowY} with size {LocalConfig.windowW},{LocalConfig.windowH}");
             //appWin?.Move(new Windows.Graphics.PointInt32(LocalConfig.windowX, LocalConfig.windowY));
             if (LocalConfig.useHistogram)
-                appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW, LocalConfig.windowH >= 220 ? LocalConfig.windowH : 220 ), Microsoft.UI.Windowing.DisplayArea.Primary);
+                appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW >= 160 ? LocalConfig.windowW : 160, LocalConfig.windowH >= 220 ? LocalConfig.windowH : 220 ), Microsoft.UI.Windowing.DisplayArea.Primary);
             else
                 appWin?.MoveAndResize(new Windows.Graphics.RectInt32(LocalConfig.windowX, LocalConfig.windowY, LocalConfig.windowW, LocalConfig.windowH), Microsoft.UI.Windowing.DisplayArea.Primary);
         }

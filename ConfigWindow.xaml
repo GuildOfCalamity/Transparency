@@ -152,10 +152,16 @@
                 <Slider.Header>
                     <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center">
                         <Run Foreground="{ThemeResource GradientTextBrush}" Text="Frequency (" />
-                        <Run Foreground="{ThemeResource SecondaryBrush}" Text="{x:Bind ViewModel.Interval, Mode=OneWay}" />
+                        <Run Foreground="{ThemeResource GradientValueBrush}" Text="{x:Bind ViewModel.Interval, Mode=OneWay}" />
                         <Run Foreground="{ThemeResource GradientTextBrush}" Text="ms )" />
                     </TextBlock>
                 </Slider.Header>
+                <interact:Interaction.Behaviors>
+                    <behave:SpringAnimationBehavior
+                        Damping="0.2"
+                        Final="1.04"
+                        Seconds="0.04" />
+                </interact:Interaction.Behaviors>
             </Slider>
             <!--#endregion-->
 

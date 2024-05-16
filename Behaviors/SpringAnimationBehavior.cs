@@ -56,6 +56,24 @@ public class SpringAnimationBehavior : Behavior<FrameworkElement>
         get => (double)GetValue(FinalProperty);
         set => SetValue(FinalProperty, value);
     }
+
+    /// <summary>
+    /// Identifies the <see cref="Damping"/> property for the animation.
+    /// </summary>
+    public static readonly DependencyProperty DampingProperty = DependencyProperty.Register(
+        nameof(Damping),
+        typeof(double),
+        typeof(SlideAnimationBehavior),
+        new PropertyMetadata(0.25f));
+
+    /// <summary>
+    /// Gets or sets the amount.
+    /// </summary>
+    public double Damping
+    {
+        get => (double)GetValue(DampingProperty);
+        set => SetValue(DampingProperty, value);
+    }
     #endregion
 
     protected override void OnAttached()
@@ -105,7 +123,7 @@ public class SpringAnimationBehavior : Behavior<FrameworkElement>
     /// </summary>
     void AssociatedObject_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
-        AnimateUIElementSpring(Final, TimeSpan.FromSeconds(Seconds), (UIElement)sender);
+        AnimateUIElementSpring(Final, TimeSpan.FromSeconds(Seconds), (UIElement)sender, Damping);
     }
 
     /// <summary>
@@ -113,14 +131,14 @@ public class SpringAnimationBehavior : Behavior<FrameworkElement>
     /// </summary>
     void AssociatedObject_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
-        AnimateUIElementSpring(1.0, TimeSpan.FromSeconds(Seconds), (UIElement)sender);
+        AnimateUIElementSpring(1.0, TimeSpan.FromSeconds(Seconds), (UIElement)sender, Damping);
     }
 
     #region [Composition Animations]
     /// <summary>
     /// Scale animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
     /// </summary>
-    void AnimateUIElementSpring(double to, TimeSpan duration, UIElement target)
+    void AnimateUIElementSpring(double to, TimeSpan duration, UIElement target, double damping)
     {
         var targetVisual = ElementCompositionPreview.GetElementVisual(target);
         if (targetVisual is null) { return; }
@@ -128,7 +146,7 @@ public class SpringAnimationBehavior : Behavior<FrameworkElement>
         var springAnimation = compositor.CreateSpringVector3Animation();
         springAnimation.FinalValue = new Vector3((float)to);
         springAnimation.Period = duration;
-        springAnimation.DampingRatio = 0.2f;
+        springAnimation.DampingRatio = (float)damping;
         springAnimation.Target = "Scale";
         targetVisual.StartAnimation("Scale", springAnimation);
     }

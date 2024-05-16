@@ -92,7 +92,10 @@
                     Opacity="{x:Bind ViewModel.Config.opacity, Mode=OneWay}"
                     Style="{ThemeResource SettingsToolbarButton}">
                     <interact:Interaction.Behaviors>
-                        <behave:SpringAnimationBehavior Final="1.05" Seconds="0.05" />
+                        <behave:SpringAnimationBehavior
+                            Damping="0.2"
+                            Final="1.05"
+                            Seconds="0.04" />
                     </interact:Interaction.Behaviors>
                 </Button>
                 <TextBlock
@@ -116,7 +119,10 @@
                     Opacity="{x:Bind ViewModel.Config.opacity, Mode=OneWay}"
                     Style="{ThemeResource ToolbarButton}">
                     <interact:Interaction.Behaviors>
-                        <behave:SpringAnimationBehavior Final="1.05" Seconds="0.05" />
+                        <behave:SpringAnimationBehavior
+                            Damping="0.2"
+                            Final="1.05"
+                            Seconds="0.04" />
                     </interact:Interaction.Behaviors>
                 </Button>
             </Grid>
