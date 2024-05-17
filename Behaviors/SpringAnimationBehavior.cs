@@ -16,6 +16,9 @@ namespace Transparency.Behaviors;
 /// <summary>
 /// <see cref="FrameworkElement"/> <see cref="Microsoft.Xaml.Interactivity.Behavior"/>.
 /// </summary>
+/// <remarks>
+/// You can add this to any control, but it looks best on <see cref="Button"/>s.
+/// </remarks>
 public class SpringAnimationBehavior : Behavior<FrameworkElement>
 {
     #region [Props]
@@ -136,7 +139,7 @@ public class SpringAnimationBehavior : Behavior<FrameworkElement>
 
     #region [Composition Animations]
     /// <summary>
-    /// Scale animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
+    /// Bounce animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
     /// </summary>
     void AnimateUIElementSpring(double to, TimeSpan duration, UIElement target, double damping)
     {

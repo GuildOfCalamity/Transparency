@@ -64,6 +64,7 @@
     <None Remove="Assets\CPUGauge.png" />
     <None Remove="Assets\Fonts\Aptos.ttf" />
     <None Remove="Assets\Fonts\OdinRounded.ttf" />
+    <None Remove="Assets\Spinner.png" />
     <None Remove="Assets\WinTransparent.ico" />
     <None Remove="Assets\WinTransparent.png" />
     <None Remove="ConfigWindow.xaml" />

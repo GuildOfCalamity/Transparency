@@ -39,7 +39,7 @@
                     Final="1.0"
                     Seconds="1.5" />
                 <behave:SlideAnimationBehavior
-                    Down="False"
+                    Direction="Up"
                     EaseMode="QuadEaseOut"
                     Seconds="1.5" />
             </interact:Interaction.Behaviors>

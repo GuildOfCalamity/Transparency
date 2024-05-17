@@ -147,60 +147,6 @@ public class OpacityAnimationBehavior : Behavior<FrameworkElement>
     }
 
     /// <summary>
-    /// Offset animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementOffset(Point to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
-        offsetAnimation.Direction = direction;
-        offsetAnimation.Duration = duration;
-        offsetAnimation.Target = "Offset";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-        {
-            //easer = compositor.CreateCubicBezierEasingFunction(new(1f, 0.3f), new(0.6f, 0.7f));
-            easer = CreatePennerEquation(compositor, ease);
-        }
-
-        offsetAnimation.InsertKeyFrame(0.0f, new Vector3((float)to.X, (float)to.Y, 0), easer);
-        offsetAnimation.InsertKeyFrame(1.0f, new Vector3(0), easer);
-        targetVisual.StartAnimation("Offset", offsetAnimation);
-    }
-
-    /// <summary>
-    /// Scale animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementScale(double to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
-        scaleAnimation.Direction = direction;
-        scaleAnimation.Duration = duration;
-        scaleAnimation.Target = "Scale";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-        {
-            //easer = compositor.CreateCubicBezierEasingFunction(new(1f, 0.3f), new(0.6f, 0.7f));
-            easer = CreatePennerEquation(compositor, ease);
-        }
-
-        scaleAnimation.InsertKeyFrame(0.0f, new Vector3(0), easer);
-        scaleAnimation.InsertKeyFrame(1.0f, new Vector3((float)to), easer);
-        targetVisual.StartAnimation("Scale", scaleAnimation);
-    }
-
-    /// <summary>
     /// This should be moved to a shared module, but I want to keep these behaviors portable.
     /// </summary>
     static Microsoft.UI.Composition.CompositionEasingFunction CreatePennerEquation(Microsoft.UI.Composition.Compositor compositor, string pennerType = "SineEaseInOut")

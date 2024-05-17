@@ -45,7 +45,7 @@
                 Final="1.0"
                 Seconds="1.0" />
             <behave:SlideAnimationBehavior
-                Down="False"
+                Direction="Up"
                 EaseMode="QuadEaseOut"
                 Seconds="1.0" />
         </interact:Interaction.Behaviors>
@@ -63,9 +63,10 @@
                     Final="1.0"
                     Seconds="1.5" />
                 <behave:SlideAnimationBehavior
-                    Down="False"
+                    Direction="Left"
                     EaseMode="QuadEaseOut"
-                    Seconds="1.5" />
+                    FallbackAmount="350"
+                    Seconds="1.7" />
             </interact:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal">
                 <Image
@@ -296,11 +297,32 @@
 
             <ctrl:SeparatorLine Margin="1,5,0,0" />
 
-            <!--#region [Logo Icon]-->
+            <!--#region [Rotation Animation Test]-->
             <Image
                 Width="60"
                 Height="60"
-                Margin="20,1,20,10"
+                Margin="62,24,20,10"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Source="ms-appx:///Assets/Spinner.png">
+                <interact:Interaction.Behaviors>
+                    <behave:RotationAnimationBehavior
+                        Direction="Normal"
+                        EaseMode="CircleEaseInOut"
+                        Seconds="3.0" />
+                    <behave:OpacityAnimationBehavior
+                        EaseMode="QuadEaseOut"
+                        Final="0.4"
+                        Seconds="2.0" />
+                </interact:Interaction.Behaviors>
+            </Image>
+            <!--#endregion-->
+
+            <!--#region [Scale Animation Test]-->
+            <!--<Image
+                Width="60"
+                Height="60"
+                Margin="62,24,20,10"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Source="ms-appx:///Assets/WinTransparent.png">
@@ -314,7 +336,7 @@
                         Final="0.5"
                         Seconds="2.0" />
                 </interact:Interaction.Behaviors>
-            </Image>
+            </Image>-->
             <!--#endregion-->
 
         </StackPanel>
@@ -328,10 +350,11 @@
             <!--  wrapped this in a grid to support AnimateUIElementOffset  -->
             <ctrl:AutoCloseInfoBar
                 x:Name="infoBar"
-                AutoCloseInterval="5000"
+                AutoCloseInterval="6000"
                 IsOpen="False"
                 Seconds="2.0"
-                Severity="Informational">
+                Severity="Informational"
+                SlideUp="True">
                 <!--<interact:Interaction.Behaviors>
                 <behave:InfoBarOpacityBehavior
                     EaseMode="QuadEaseOut"

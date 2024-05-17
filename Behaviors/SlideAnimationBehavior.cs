@@ -1,4 +1,4 @@
-﻿// Ignore Spelling: penner
+﻿// Ignore Spelling: penner Fallback
 
 using System;
 using System.Diagnostics;
@@ -47,19 +47,19 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
     /// <summary>
     /// Identifies the <see cref="Down"/> property for the animation.
     /// </summary>
-    public static readonly DependencyProperty DownProperty = DependencyProperty.Register(
-        nameof(Down),
-        typeof(bool),
+    public static readonly DependencyProperty DirectionProperty = DependencyProperty.Register(
+        nameof(Direction),
+        typeof(string),
         typeof(SlideAnimationBehavior),
         new PropertyMetadata(false));
 
     /// <summary>
     /// Gets or sets the direction.
     /// </summary>
-    public bool Down
+    public string Direction
     {
-        get => (bool)GetValue(DownProperty);
-        set => SetValue(DownProperty, value);
+        get => (string)GetValue(DirectionProperty);
+        set => SetValue(DirectionProperty, value);
     }
 
     /// <summary>
@@ -78,6 +78,42 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
     {
         get => (string)GetValue(EaseModeProperty);
         set => SetValue(EaseModeProperty, value);
+    }
+
+    /// <summary>
+    /// Identifies the <see cref="CollapseOnFinish"/> property for the animation.
+    /// </summary>
+    public static readonly DependencyProperty CollapseOnFinishProperty = DependencyProperty.Register(
+        nameof(CollapseOnFinish),
+        typeof(bool),
+        typeof(SlideAnimationBehavior),
+        new PropertyMetadata(false));
+
+    /// <summary>
+    /// Gets or sets the visibility for the compositor.
+    /// </summary>
+    public bool CollapseOnFinish
+    {
+        get => (bool)GetValue(CollapseOnFinishProperty);
+        set => SetValue(CollapseOnFinishProperty, value);
+    }
+
+    /// <summary>
+    /// Identifies the <see cref="FallbackAmount"/> property for the animation.
+    /// </summary>
+    public static readonly DependencyProperty FallbackAmountProperty = DependencyProperty.Register(
+        nameof(FallbackAmount),
+        typeof(double),
+        typeof(SlideAnimationBehavior),
+        new PropertyMetadata(200d));
+
+    /// <summary>
+    /// Gets or sets the default amount to slide is not control size can be acquired.
+    /// </summary>
+    public double FallbackAmount
+    {
+        get => (double)GetValue(FallbackAmountProperty);
+        set => SetValue(FallbackAmountProperty, value);
     }
     #endregion
 
@@ -115,47 +151,45 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
 
         if (obj.ActualHeight != double.NaN && obj.ActualHeight != 0)
         {
-            Debug.WriteLine($"[INFO] Reported {sender.GetType().Name} height is {obj.ActualHeight} pixels");
+            Debug.WriteLine($"[INFO] Reported {sender.GetType().Name} width by height: {obj.ActualHeight} pixels by {obj.ActualWidth} pixels");
 
-            if (!Down)
-            {
+            if (Direction.Equals("up", StringComparison.CurrentCultureIgnoreCase))
                 AnimateUIElementOffset(new Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
-            }
-            else
-            {
+            else if(Direction.Equals("down", StringComparison.CurrentCultureIgnoreCase))
                 AnimateUIElementOffset(new Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode, Microsoft.UI.Composition.AnimationDirection.Reverse);
-                // If the control happens to slide down over another control then the pointer's
-                // hit test may become a problem, so we'll set the visibility property.
-                _timer = new DispatcherTimer();
-                _timer.Interval = TimeSpan.FromSeconds(Seconds);
-                _timer.Tick += (_, _) =>
-                {
-                    _timer.Stop();
-                    ((UIElement)sender).Visibility = Visibility.Collapsed;
-                };
-                _timer.Start();
-            }
+            else if (Direction.Equals("left", StringComparison.CurrentCultureIgnoreCase))
+                AnimateUIElementOffset(new Point(obj.ActualWidth, 0), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
+            else if (Direction.Equals("right", StringComparison.CurrentCultureIgnoreCase))
+                AnimateUIElementOffset(new Point(obj.ActualWidth, 0), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode, Microsoft.UI.Composition.AnimationDirection.Reverse);
+            else // default is up
+                AnimateUIElementOffset(new Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
         }
         else
         {
-            if (!Down)
+            if (Direction.Equals("up", StringComparison.CurrentCultureIgnoreCase))
+                AnimateUIElementOffset(new Point(0, (float)FallbackAmount), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
+            else if (Direction.Equals("down", StringComparison.CurrentCultureIgnoreCase))
+                AnimateUIElementOffset(new Point(0, (float)FallbackAmount), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode, Microsoft.UI.Composition.AnimationDirection.Reverse);
+            else if (Direction.Equals("left", StringComparison.CurrentCultureIgnoreCase))
+                AnimateUIElementOffset(new Point((float)FallbackAmount, 0), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
+            else if (Direction.Equals("right", StringComparison.CurrentCultureIgnoreCase))
+                AnimateUIElementOffset(new Point((float)FallbackAmount, 0), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode, Microsoft.UI.Composition.AnimationDirection.Reverse);
+            else // default is up
+                AnimateUIElementOffset(new Point(0, (float)FallbackAmount), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
+        }
+
+        if (CollapseOnFinish)
+        {
+            // If the control happens to slide down over another control then the pointer's
+            // hit test may become a problem, so we'll set the visibility property.
+            _timer = new DispatcherTimer();
+            _timer.Interval = TimeSpan.FromSeconds(Seconds);
+            _timer.Tick += (_, _) =>
             {
-                AnimateUIElementOffset(new Point(0, 250), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
-            }
-            else
-            {
-                AnimateUIElementOffset(new Point(0, 250), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode, Microsoft.UI.Composition.AnimationDirection.Reverse);
-                // If the control happens to slide down over another control then the pointer's
-                // hit test may become a problem, so we'll set the visibility property.
-                _timer = new DispatcherTimer();
-                _timer.Interval = TimeSpan.FromSeconds(Seconds);
-                _timer.Tick += (_, _) =>
-                {
-                    _timer.Stop();
-                    ((UIElement)sender).Visibility = Visibility.Collapsed;
-                };
-                _timer.Start();
-            }
+                _timer.Stop();
+                ((UIElement)sender).Visibility = Visibility.Collapsed;
+            };
+            _timer.Start();
         }
     }
 
@@ -168,33 +202,6 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
     }
 
     #region [Composition Animations]
-    /// <summary>
-    /// Opacity animation using <see cref="Microsoft.UI.Composition.ScalarKeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementOpacity(double from, double to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var opacityAnimation = compositor.CreateScalarKeyFrameAnimation();
-        opacityAnimation.Direction = direction;
-        opacityAnimation.Duration = duration;
-        opacityAnimation.Target = "Opacity";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-        {
-            //easer = compositor.CreateCubicBezierEasingFunction(new(1f, 0.3f), new(0.6f, 0.7f));
-            easer = CreatePennerEquation(compositor, ease);
-        }
-
-        opacityAnimation.InsertKeyFrame(0.0f, (float)from, easer);
-        opacityAnimation.InsertKeyFrame(1.0f, (float)to, easer);
-        targetVisual.StartAnimation("Opacity", opacityAnimation);
-    }
-
     /// <summary>
     /// Offset animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
     /// </summary>
@@ -212,41 +219,11 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
         if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
             easer = compositor.CreateLinearEasingFunction();
         else
-        {
-            //easer = compositor.CreateCubicBezierEasingFunction(new(1f, 0.3f), new(0.6f, 0.7f));
             easer = CreatePennerEquation(compositor, ease);
-        }
 
         offsetAnimation.InsertKeyFrame(0.0f, new Vector3((float)to.X, (float)to.Y, 0), easer);
         offsetAnimation.InsertKeyFrame(1.0f, new Vector3(0), easer);
         targetVisual.StartAnimation("Offset", offsetAnimation);
-    }
-
-    /// <summary>
-    /// Scale animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementScale(double to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
-        scaleAnimation.Direction = direction;
-        scaleAnimation.Duration = duration;
-        scaleAnimation.Target = "Scale";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-        {
-            //easer = compositor.CreateCubicBezierEasingFunction(new(1f, 0.3f), new(0.6f, 0.7f));
-            easer = CreatePennerEquation(compositor, ease);
-        }
-
-        scaleAnimation.InsertKeyFrame(0.0f, new Vector3(0), easer);
-        scaleAnimation.InsertKeyFrame(1.0f, new Vector3((float)to), easer);
-        targetVisual.StartAnimation("Scale", scaleAnimation);
     }
 
     /// <summary>

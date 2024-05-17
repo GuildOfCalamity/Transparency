@@ -25,6 +25,11 @@ public class AutoCloseInfoBar : InfoBar
     /// </summary>
     public double Seconds { get; set; } = 1;
 
+    /// <summary>
+    /// Gets or sets the animation direction.
+    /// </summary>
+    public bool SlideUp { get; set; } = true;
+
     public AutoCloseInfoBar() : base()
     {
         this.Loaded += AutoCloseInfoBar_Loaded;
@@ -106,11 +111,12 @@ public class AutoCloseInfoBar : InfoBar
             AnimateUIElementOpacity(0, 1, TimeSpan.FromSeconds(Seconds), obj);
             if (obj.ActualHeight != double.NaN && obj.ActualHeight != 0)
             {
-                AnimateUIElementOffset(new Windows.Foundation.Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds).Multiply(0.5), obj);
+                Debug.WriteLine($"[INFO] Reported {obj.GetType().Name} width by height: {obj.ActualHeight} pixels by {obj.ActualWidth} pixels");
+                AnimateUIElementOffset(new Windows.Foundation.Point(0, obj.ActualHeight), TimeSpan.FromSeconds(Seconds).Multiply(0.5), obj, SlideUp ? Microsoft.UI.Composition.AnimationDirection.Normal : Microsoft.UI.Composition.AnimationDirection.Reverse);
             }
             else
             {
-                AnimateUIElementOffset(new Windows.Foundation.Point(0, 60), TimeSpan.FromSeconds(Seconds).Multiply(0.5), obj);
+                AnimateUIElementOffset(new Windows.Foundation.Point(0, 60), TimeSpan.FromSeconds(Seconds).Multiply(0.5), obj, SlideUp ? Microsoft.UI.Composition.AnimationDirection.Normal : Microsoft.UI.Composition.AnimationDirection.Reverse);
             }
             obj.Open();
         }

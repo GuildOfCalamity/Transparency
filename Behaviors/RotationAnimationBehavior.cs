@@ -6,20 +6,27 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Xaml.Interactivity;
 
 using Windows.Foundation;
 
 namespace Transparency.Behaviors;
 
-
 /// <summary>
-/// <see cref="Microsoft.UI.Xaml.Controls.InfoBar"/> <see cref="Microsoft.Xaml.Interactivity.Behavior"/>.
+/// <see cref="FrameworkElement"/> <see cref="Microsoft.Xaml.Interactivity.Behavior"/>.
 /// </summary>
-public class InfoBarOpacityBehavior : Behavior<InfoBar>
+/// <remarks>
+/// These are the bound events:
+///  - Loaded.....: Will begin the rotation animation.
+///  - Unloaded...: Will stop the rotation animation.
+///  - Visible....: Will begin the rotation animation.
+///  - Collapsed..: Will stop the rotation animation.
+/// </remarks>
+public class RotationAnimationBehavior : Behavior<FrameworkElement>
 {
     #region [Props]
-    long? _iopToken;
+    long? _ivToken;
 
     /// <summary>
     /// Identifies the <see cref="Seconds"/> property for the animation.
@@ -40,22 +47,23 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
     }
 
     /// <summary>
-    /// Identifies the <see cref="Final"/> property for the animation.
+    /// Identifies the <see cref="Direction"/> property for the animation.
     /// </summary>
-    public static readonly DependencyProperty FinalProperty = DependencyProperty.Register(
-        nameof(Final),
-        typeof(double),
+    public static readonly DependencyProperty DirectionProperty = DependencyProperty.Register(
+        nameof(Direction),
+        typeof(string),
         typeof(SlideAnimationBehavior),
-        new PropertyMetadata(1d));
+        new PropertyMetadata("Normal"));
 
     /// <summary>
-    /// Gets or sets the amount.
+    /// Gets or sets the direction for the compositor.
     /// </summary>
-    public double Final
+    public string Direction
     {
-        get => (double)GetValue(FinalProperty);
-        set => SetValue(FinalProperty, value);
+        get => (string)GetValue(DirectionProperty);
+        set => SetValue(DirectionProperty, value);
     }
+
 
     /// <summary>
     /// Identifies the <see cref="EaseMode"/> property for the animation.
@@ -83,7 +91,8 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
         if (!App.AnimationsEffectsEnabled)
             return;
 
-        _iopToken = AssociatedObject.RegisterPropertyChangedCallback(InfoBar.IsOpenProperty, IsOpenChanged);
+        _ivToken = AssociatedObject.RegisterPropertyChangedCallback(FrameworkElement.VisibilityProperty, VisibilityChanged);
+
         AssociatedObject.Loaded += AssociatedObject_Loaded;
         AssociatedObject.Unloaded += AssociatedObject_Unloaded;
     }
@@ -95,130 +104,48 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
         if (!App.AnimationsEffectsEnabled)
             return;
 
-        if (_iopToken != null)
-            AssociatedObject.UnregisterPropertyChangedCallback(InfoBar.IsOpenProperty, (long)_iopToken);
+        if (_ivToken != null)
+            AssociatedObject.UnregisterPropertyChangedCallback(FrameworkElement.VisibilityProperty, (long)_ivToken);
 
         AssociatedObject.Loaded -= AssociatedObject_Loaded;
         AssociatedObject.Unloaded -= AssociatedObject_Unloaded;
     }
 
     /// <summary>
-    /// Callback for <see cref="Microsoft.UI.Xaml.Controls.InfoBar"/> property change.
+    /// Callback for <see cref="FrameworkElement.VisibilityProperty"/> change.
     /// </summary>
-    void IsOpenChanged(DependencyObject o, DependencyProperty p)
+    void VisibilityChanged(DependencyObject o, DependencyProperty p)
     {
-        var obj = o as InfoBar;
+        var obj = o as FrameworkElement;
 
-        if (obj == null || p != InfoBar.IsOpenProperty)
+        if (obj == null || p != FrameworkElement.VisibilityProperty)
             return;
 
-        if (obj.IsOpen)
-            AnimateUIElementOpacity(0, Final, TimeSpan.FromSeconds(Seconds), obj, EaseMode);
+        if (obj.Visibility == Visibility.Visible)
+            AnimateUIElementRotate(TimeSpan.FromSeconds(Seconds), obj, Direction, EaseMode, false);
         else
-            AnimateUIElementOpacity(Final, 0, TimeSpan.FromSeconds(Seconds), obj, EaseMode);
-    }
-
-    void AssociatedObject_Loaded(object sender, RoutedEventArgs e)
-    {
-        Debug.WriteLine($"[INFO] {sender.GetType().Name} loaded at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
+            AnimateUIElementRotate(TimeSpan.FromSeconds(Seconds), obj, Direction, EaseMode, true);
     }
 
     /// <summary>
-    /// Mock disposal routine.
+    /// <see cref="FrameworkElement"/> event.
+    /// </summary>
+    void AssociatedObject_Loaded(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine($"[INFO] {sender.GetType().Name} loaded at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
+        AnimateUIElementRotate(TimeSpan.FromSeconds(Seconds), (UIElement)sender, Direction, EaseMode, false);
+    }
+
+    /// <summary>
+    /// <see cref="FrameworkElement"/> event.
     /// </summary>
     void AssociatedObject_Unloaded(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine($"[INFO] {sender.GetType().Name} unloaded at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
+        AnimateUIElementRotate(TimeSpan.FromSeconds(Seconds), (UIElement)sender, Direction, EaseMode, true);
     }
 
     #region [Composition Animations]
-    /// <summary>
-    /// Opacity animation using <see cref="Microsoft.UI.Composition.ScalarKeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementOpacity(double from, double to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var opacityAnimation = compositor.CreateScalarKeyFrameAnimation();
-        opacityAnimation.Direction = direction;
-        opacityAnimation.Duration = duration;
-        opacityAnimation.Target = "Opacity";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-            easer = CreatePennerEquation(compositor, ease);
-
-        opacityAnimation.InsertKeyFrame(0.0f, (float)from, easer);
-        opacityAnimation.InsertKeyFrame(1.0f, (float)to, easer);
-        targetVisual.StartAnimation("Opacity", opacityAnimation);
-    }
-
-    /// <summary>
-    /// Offset animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementOffset(Point to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
-        offsetAnimation.Direction = direction;
-        offsetAnimation.Duration = duration;
-        offsetAnimation.Target = "Offset";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-            easer = CreatePennerEquation(compositor, ease);
-
-        offsetAnimation.InsertKeyFrame(0.0f, new Vector3((float)to.X, (float)to.Y, 0), easer);
-        offsetAnimation.InsertKeyFrame(1.0f, new Vector3(0), easer);
-        targetVisual.StartAnimation("Offset", offsetAnimation);
-    }
-
-    /// <summary>
-    /// Scale animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementScale(double to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        var compositor = targetVisual.Compositor;
-        var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
-        scaleAnimation.Direction = direction;
-        scaleAnimation.Duration = duration;
-        scaleAnimation.Target = "Scale";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-            easer = CreatePennerEquation(compositor, ease);
-
-        scaleAnimation.InsertKeyFrame(0.0f, new Vector3(0), easer);
-        scaleAnimation.InsertKeyFrame(1.0f, new Vector3((float)to), easer);
-        targetVisual.StartAnimation("Scale", scaleAnimation);
-    }
-
-    /// <summary>
-    /// Bounce animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementSpring(double to, TimeSpan duration, UIElement target, double damping)
-    {
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var springAnimation = compositor.CreateSpringVector3Animation();
-        springAnimation.FinalValue = new Vector3((float)to);
-        springAnimation.Period = duration;
-        springAnimation.DampingRatio = (float)damping;
-        springAnimation.Target = "Scale";
-        targetVisual.StartAnimation("Scale", springAnimation);
-    }
-
     /// <summary>
     /// Rotation animation using <see cref="Microsoft.UI.Composition.ScalarKeyFrameAnimation"/> and expression key frames.
     /// </summary>

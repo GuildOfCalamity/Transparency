@@ -20,6 +20,8 @@
 	- "Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9"
 	- "System.Diagnostics.PerformanceCounter" Version="8.0.0"
 
+* Posterity: The `HistoWindow` and the `MainWindow` could be combined into one with a `Visibility` property.
+ 
 ## 📝 v1.0.0.1 - May 2024
 * Added Histogram window and related config.
 

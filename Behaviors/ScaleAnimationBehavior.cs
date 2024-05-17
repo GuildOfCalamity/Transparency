@@ -19,8 +19,6 @@ namespace Transparency.Behaviors;
 public class ScaleAnimationBehavior : Behavior<FrameworkElement>
 {
     #region [Props]
-    DispatcherTimer? _timer;
-
     /// <summary>
     /// Identifies the <see cref="Seconds"/> property for the animation.
     /// </summary>
@@ -122,60 +120,6 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
 
     #region [Composition Animations]
     /// <summary>
-    /// Opacity animation using <see cref="Microsoft.UI.Composition.ScalarKeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementOpacity(double from, double to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var opacityAnimation = compositor.CreateScalarKeyFrameAnimation();
-        opacityAnimation.Direction = direction;
-        opacityAnimation.Duration = duration;
-        opacityAnimation.Target = "Opacity";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-        {
-            //easer = compositor.CreateCubicBezierEasingFunction(new(1f, 0.3f), new(0.6f, 0.7f));
-            easer = CreatePennerEquation(compositor, ease);
-        }
-
-        opacityAnimation.InsertKeyFrame(0.0f, (float)from, easer);
-        opacityAnimation.InsertKeyFrame(1.0f, (float)to, easer);
-        targetVisual.StartAnimation("Opacity", opacityAnimation);
-    }
-
-    /// <summary>
-    /// Offset animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
-    /// </summary>
-    void AnimateUIElementOffset(Point to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
-    {
-        Microsoft.UI.Composition.CompositionEasingFunction easer;
-        var targetVisual = ElementCompositionPreview.GetElementVisual(target);
-        if (targetVisual is null) { return; }
-        var compositor = targetVisual.Compositor;
-        var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
-        offsetAnimation.Direction = direction;
-        offsetAnimation.Duration = duration;
-        offsetAnimation.Target = "Offset";
-
-        if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
-            easer = compositor.CreateLinearEasingFunction();
-        else
-        {
-            //easer = compositor.CreateCubicBezierEasingFunction(new(1f, 0.3f), new(0.6f, 0.7f));
-            easer = CreatePennerEquation(compositor, ease);
-        }
-
-        offsetAnimation.InsertKeyFrame(0.0f, new Vector3((float)to.X, (float)to.Y, 0), easer);
-        offsetAnimation.InsertKeyFrame(1.0f, new Vector3(0), easer);
-        targetVisual.StartAnimation("Offset", offsetAnimation);
-    }
-
-    /// <summary>
     /// Scale animation using <see cref="Microsoft.UI.Composition.Vector3KeyFrameAnimation"/>
     /// </summary>
     void AnimateUIElementScale(double to, TimeSpan duration, UIElement target, string ease, Microsoft.UI.Composition.AnimationDirection direction = Microsoft.UI.Composition.AnimationDirection.Normal)
@@ -183,9 +127,16 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
         Microsoft.UI.Composition.CompositionEasingFunction easer;
         var targetVisual = ElementCompositionPreview.GetElementVisual(target);
         if (targetVisual is null) { return; }
+        //targetVisual.Size = new Vector2((float)target.ActualSize.Y, (float)target.ActualSize.X);
+
+        Debug.WriteLine($"[DEBUG] RelativeOffsetAdjustment: {targetVisual.RelativeOffsetAdjustment}");
         //var targetX = targetVisual.RelativeOffsetAdjustment.X == 0 ? 1 : 0;
         //targetVisual.AnchorPoint = new Vector2(targetX, 0);
-        targetVisual.AnchorPoint = new Vector2(0f, 0f);
+
+        // You may need to adjust the margin of the UIElement since we'll scale from the center.
+        targetVisual.AnchorPoint = new Vector2(0.5f, 0.5f);
+
+
         var compositor = targetVisual.Compositor;
         var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
         scaleAnimation.Direction = direction;
@@ -195,10 +146,7 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
         if (string.IsNullOrEmpty(ease) || ease.Contains("linear", StringComparison.CurrentCultureIgnoreCase))
             easer = compositor.CreateLinearEasingFunction();
         else
-        {
-            //easer = compositor.CreateCubicBezierEasingFunction(new(1f, 0.3f), new(0.6f, 0.7f));
             easer = CreatePennerEquation(compositor, ease);
-        }
 
         scaleAnimation.InsertKeyFrame(0.0f, new Vector3(0), easer);
         scaleAnimation.InsertKeyFrame(1.0f, new Vector3((float)to), easer);
