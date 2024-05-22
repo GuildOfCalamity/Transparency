@@ -34,7 +34,7 @@ public class RotationAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty SecondsProperty = DependencyProperty.Register(
         nameof(Seconds),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(RotationAnimationBehavior),
         new PropertyMetadata(1.25d));
 
     /// <summary>
@@ -52,7 +52,7 @@ public class RotationAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty DirectionProperty = DependencyProperty.Register(
         nameof(Direction),
         typeof(string),
-        typeof(SlideAnimationBehavior),
+        typeof(RotationAnimationBehavior),
         new PropertyMetadata("Normal"));
 
     /// <summary>
@@ -71,7 +71,7 @@ public class RotationAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty EaseModeProperty = DependencyProperty.Register(
         nameof(EaseMode),
         typeof(string),
-        typeof(SlideAnimationBehavior),
+        typeof(RotationAnimationBehavior),
         new PropertyMetadata("Linear"));
 
     /// <summary>
@@ -177,6 +177,7 @@ public class RotationAnimationBehavior : Behavior<FrameworkElement>
         else
             rotateAnimation.InsertExpressionKeyFrame(1.0f, "this.StartingValue - 360f", easer);
 
+        rotateAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         rotateAnimation.Duration = duration;
         rotateAnimation.IterationBehavior = Microsoft.UI.Composition.AnimationIterationBehavior.Forever;
 

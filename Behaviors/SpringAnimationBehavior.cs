@@ -22,15 +22,13 @@ namespace Transparency.Behaviors;
 public class SpringAnimationBehavior : Behavior<FrameworkElement>
 {
     #region [Props]
-    DispatcherTimer? _timer;
-
     /// <summary>
     /// Identifies the <see cref="Seconds"/> property for the animation.
     /// </summary>
     public static readonly DependencyProperty SecondsProperty = DependencyProperty.Register(
         nameof(Seconds),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(SpringAnimationBehavior),
         new PropertyMetadata(1.25d));
 
     /// <summary>
@@ -48,7 +46,7 @@ public class SpringAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty FinalProperty = DependencyProperty.Register(
         nameof(Final),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(SpringAnimationBehavior),
         new PropertyMetadata(1d));
 
     /// <summary>
@@ -66,7 +64,7 @@ public class SpringAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty DampingProperty = DependencyProperty.Register(
         nameof(Damping),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(SpringAnimationBehavior),
         new PropertyMetadata(0.25f));
 
     /// <summary>
@@ -147,6 +145,7 @@ public class SpringAnimationBehavior : Behavior<FrameworkElement>
         if (targetVisual is null) { return; }
         var compositor = targetVisual.Compositor;
         var springAnimation = compositor.CreateSpringVector3Animation();
+        springAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         springAnimation.FinalValue = new Vector3((float)to);
         springAnimation.Period = duration;
         springAnimation.DampingRatio = (float)damping;

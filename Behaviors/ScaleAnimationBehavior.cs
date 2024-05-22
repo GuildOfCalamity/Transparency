@@ -25,7 +25,7 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty SecondsProperty = DependencyProperty.Register(
         nameof(Seconds),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(ScaleAnimationBehavior),
         new PropertyMetadata(1.25d));
 
     /// <summary>
@@ -43,7 +43,7 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty FinalProperty = DependencyProperty.Register(
         nameof(Final),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(ScaleAnimationBehavior),
         new PropertyMetadata(1d));
 
     /// <summary>
@@ -61,7 +61,7 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty EaseModeProperty = DependencyProperty.Register(
         nameof(EaseMode),
         typeof(string),
-        typeof(SlideAnimationBehavior),
+        typeof(ScaleAnimationBehavior),
         new PropertyMetadata("Linear"));
 
     /// <summary>
@@ -139,6 +139,7 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
 
         var compositor = targetVisual.Compositor;
         var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
+        scaleAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         scaleAnimation.Direction = direction;
         scaleAnimation.Duration = duration;
         scaleAnimation.Target = "Scale";

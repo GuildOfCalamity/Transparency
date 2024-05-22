@@ -27,7 +27,7 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
     public static readonly DependencyProperty SecondsProperty = DependencyProperty.Register(
         nameof(Seconds),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(InfoBarOpacityBehavior),
         new PropertyMetadata(1.25d));
 
     /// <summary>
@@ -45,7 +45,7 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
     public static readonly DependencyProperty FinalProperty = DependencyProperty.Register(
         nameof(Final),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(InfoBarOpacityBehavior),
         new PropertyMetadata(1d));
 
     /// <summary>
@@ -63,7 +63,7 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
     public static readonly DependencyProperty EaseModeProperty = DependencyProperty.Register(
         nameof(EaseMode),
         typeof(string),
-        typeof(SlideAnimationBehavior),
+        typeof(InfoBarOpacityBehavior),
         new PropertyMetadata("Linear"));
 
     /// <summary>
@@ -142,6 +142,7 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
         if (targetVisual is null) { return; }
         var compositor = targetVisual.Compositor;
         var opacityAnimation = compositor.CreateScalarKeyFrameAnimation();
+        opacityAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         opacityAnimation.Direction = direction;
         opacityAnimation.Duration = duration;
         opacityAnimation.Target = "Opacity";
@@ -166,6 +167,7 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
         if (targetVisual is null) { return; }
         var compositor = targetVisual.Compositor;
         var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
+        offsetAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         offsetAnimation.Direction = direction;
         offsetAnimation.Duration = duration;
         offsetAnimation.Target = "Offset";
@@ -189,6 +191,7 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
         var targetVisual = ElementCompositionPreview.GetElementVisual(target);
         var compositor = targetVisual.Compositor;
         var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
+        scaleAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         scaleAnimation.Direction = direction;
         scaleAnimation.Duration = duration;
         scaleAnimation.Target = "Scale";
@@ -212,6 +215,7 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
         if (targetVisual is null) { return; }
         var compositor = targetVisual.Compositor;
         var springAnimation = compositor.CreateSpringVector3Animation();
+        springAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         springAnimation.FinalValue = new Vector3((float)to);
         springAnimation.Period = duration;
         springAnimation.DampingRatio = (float)damping;
@@ -250,6 +254,7 @@ public class InfoBarOpacityBehavior : Behavior<InfoBar>
         else
             rotateAnimation.InsertExpressionKeyFrame(1.0f, "this.StartingValue - 360f", easer);
 
+        rotateAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         rotateAnimation.Duration = duration;
         rotateAnimation.IterationBehavior = Microsoft.UI.Composition.AnimationIterationBehavior.Forever;
 

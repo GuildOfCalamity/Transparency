@@ -178,19 +178,20 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
                 AnimateUIElementOffset(new Point(0, (float)FallbackAmount), TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
         }
 
-        if (CollapseOnFinish)
-        {
-            // If the control happens to slide down over another control then the pointer's
-            // hit test may become a problem, so we'll set the visibility property.
-            _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromSeconds(Seconds);
-            _timer.Tick += (_, _) =>
-            {
-                _timer.Stop();
-                ((UIElement)sender).Visibility = Visibility.Collapsed;
-            };
-            _timer.Start();
-        }
+        #region [using DispatcherTimer for collapse]
+        //if (CollapseOnFinish)
+        //{   // If the control happens to slide down over another control then the pointer's
+        //    // hit test may become a problem, so we'll set the visibility property.
+        //    _timer = new DispatcherTimer();
+        //    _timer.Interval = TimeSpan.FromSeconds(Seconds);
+        //    _timer.Tick += (_, _) =>
+        //    {
+        //        _timer.Stop();
+        //        ((UIElement)sender).Visibility = Visibility.Collapsed;
+        //    };
+        //    _timer.Start();
+        //}
+        #endregion
     }
 
     /// <summary>
@@ -212,6 +213,7 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
         if (targetVisual is null) { return; }
         var compositor = targetVisual.Compositor;
         var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
+        offsetAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         offsetAnimation.Direction = direction;
         offsetAnimation.Duration = duration;
         offsetAnimation.Target = "Offset";
@@ -223,7 +225,23 @@ public class SlideAnimationBehavior : Behavior<FrameworkElement>
 
         offsetAnimation.InsertKeyFrame(0.0f, new Vector3((float)to.X, (float)to.Y, 0), easer);
         offsetAnimation.InsertKeyFrame(1.0f, new Vector3(0), easer);
+
+        // Create a scoped batch so we can setup a completed event.
+        var batch = targetVisual.Compositor.CreateScopedBatch(Microsoft.UI.Composition.CompositionBatchTypes.Animation);
+        batch.Completed += (s, e) =>
+        {
+            Debug.WriteLine($"[INFO] Animation completed for {target.GetType().Name}");
+            if (CollapseOnFinish)
+            {   // If the control happens to slide down over another control then the pointer's
+                // hit test may become a problem, so we'll set the visibility property.
+                target.Visibility = Visibility.Collapsed;
+            }
+        };
+
         targetVisual.StartAnimation("Offset", offsetAnimation);
+
+        // You must call End to get the completed event to fire.
+        batch.End();
     }
 
     /// <summary>

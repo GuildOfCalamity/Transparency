@@ -25,7 +25,7 @@ public class OpacityAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty SecondsProperty = DependencyProperty.Register(
         nameof(Seconds),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(OpacityAnimationBehavior),
         new PropertyMetadata(1.25d));
 
     /// <summary>
@@ -43,7 +43,7 @@ public class OpacityAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty FinalProperty = DependencyProperty.Register(
         nameof(Final),
         typeof(double),
-        typeof(SlideAnimationBehavior),
+        typeof(OpacityAnimationBehavior),
         new PropertyMetadata(1d));
 
     /// <summary>
@@ -61,7 +61,7 @@ public class OpacityAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty EaseModeProperty = DependencyProperty.Register(
         nameof(EaseMode),
         typeof(string),
-        typeof(SlideAnimationBehavior),
+        typeof(OpacityAnimationBehavior),
         new PropertyMetadata("Linear"));
 
     /// <summary>
@@ -129,6 +129,7 @@ public class OpacityAnimationBehavior : Behavior<FrameworkElement>
         if (targetVisual is null) { return; }
         var compositor = targetVisual.Compositor;
         var opacityAnimation = compositor.CreateScalarKeyFrameAnimation();
+        opacityAnimation.StopBehavior = Microsoft.UI.Composition.AnimationStopBehavior.SetToFinalValue;
         opacityAnimation.Direction = direction;
         opacityAnimation.Duration = duration;
         opacityAnimation.Target = "Opacity";
