@@ -6,26 +6,29 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Xaml.Interactivity;
 
 using Windows.Foundation;
+using Windows.UI.Core.AnimationMetrics;
+
 
 namespace Transparency.Behaviors;
 
 /// <summary>
-/// <see cref="FrameworkElement"/> <see cref="Microsoft.Xaml.Interactivity.Behavior"/>.
+/// <see cref="Microsoft.UI.Xaml.Controls.Button"/> <see cref="Microsoft.Xaml.Interactivity.Behavior"/>.
 /// </summary>
-public class ScaleAnimationBehavior : Behavior<FrameworkElement>
+public class ButtonAnimationBehavior : Behavior<Button>
 {
     #region [Props]
+    static bool _reversing = false;
+
     /// <summary>
     /// Identifies the <see cref="Seconds"/> property for the animation.
     /// </summary>
     public static readonly DependencyProperty SecondsProperty = DependencyProperty.Register(
         nameof(Seconds),
         typeof(double),
-        typeof(ScaleAnimationBehavior),
+        typeof(InfoBarOpacityBehavior),
         new PropertyMetadata(1.25d));
 
     /// <summary>
@@ -43,7 +46,7 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty FinalProperty = DependencyProperty.Register(
         nameof(Final),
         typeof(double),
-        typeof(ScaleAnimationBehavior),
+        typeof(InfoBarOpacityBehavior),
         new PropertyMetadata(1d));
 
     /// <summary>
@@ -61,7 +64,7 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
     public static readonly DependencyProperty EaseModeProperty = DependencyProperty.Register(
         nameof(EaseMode),
         typeof(string),
-        typeof(ScaleAnimationBehavior),
+        typeof(InfoBarOpacityBehavior),
         new PropertyMetadata("Linear"));
 
     /// <summary>
@@ -81,6 +84,7 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
         if (!App.AnimationsEffectsEnabled)
             return;
 
+        AssociatedObject.Click += AssociatedObject_Click;
         AssociatedObject.Loaded += AssociatedObject_Loaded;
         AssociatedObject.Unloaded += AssociatedObject_Unloaded;
     }
@@ -92,26 +96,24 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
         if (!App.AnimationsEffectsEnabled)
             return;
 
+        AssociatedObject.Click -= AssociatedObject_Click;
         AssociatedObject.Loaded -= AssociatedObject_Loaded;
         AssociatedObject.Unloaded -= AssociatedObject_Unloaded;
     }
 
-    /// <summary>
-    /// <see cref="FrameworkElement"/> event.
-    /// </summary>
-    void AssociatedObject_Loaded(object sender, RoutedEventArgs e)
+    void AssociatedObject_Click(object sender, RoutedEventArgs e)
     {
-        Debug.WriteLine($"[INFO] {sender.GetType().Name} loaded at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
-
-        var obj = sender as FrameworkElement;
-        if (obj is null) { return; }
-
-        Debug.WriteLine($"[INFO] Scale animation will run for {Seconds} seconds.");
+        _reversing = false;
         AnimateUIElementScale(Final, TimeSpan.FromSeconds(Seconds), (UIElement)sender, EaseMode);
     }
 
+    void AssociatedObject_Loaded(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine($"[INFO] {sender.GetType().Name} loaded at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
+    }
+
     /// <summary>
-    /// <see cref="FrameworkElement"/> event.
+    /// Mock disposal routine.
     /// </summary>
     void AssociatedObject_Unloaded(object sender, RoutedEventArgs e)
     {
@@ -127,17 +129,12 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
         Microsoft.UI.Composition.CompositionEasingFunction easer;
         var targetVisual = ElementCompositionPreview.GetElementVisual(target);
         if (targetVisual is null) { return; }
+
         //targetVisual.Size = new Vector2(target.ActualSize.X, target.ActualSize.Y);
-
-        //var targetX = targetVisual.RelativeOffsetAdjustment.X == 0 ? 1 : 0;
-        //targetVisual.AnchorPoint = new Vector2(targetX, 0);
-
-        // This is very important for the effect to work properly.
-        targetVisual.CenterPoint = new Vector3(target.ActualSize.X / 2f, target.ActualSize.Y / 2f, 0f);
-
-        // If you choose to use the AnchorPoint, then you may need to adjust the margin of the UIElement.
         //targetVisual.AnchorPoint = new Vector2(0.5f, 0.5f);
 
+        // This is very important for the effect to work properly.
+        targetVisual.CenterPoint = new Vector3(target.ActualSize.X/2f, target.ActualSize.Y/2f, 0f);
 
         var compositor = targetVisual.Compositor;
         var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
@@ -151,8 +148,27 @@ public class ScaleAnimationBehavior : Behavior<FrameworkElement>
         else
             easer = CreatePennerEquation(compositor, ease);
 
-        scaleAnimation.InsertKeyFrame(0.0f, new Vector3(0), easer);
+        scaleAnimation.InsertKeyFrame(0.0f, new Vector3(1,1,1), easer);
         scaleAnimation.InsertKeyFrame(1.0f, new Vector3((float)to), easer);
+
+        // Create a scoped batch so we can setup a completed event.
+        var batch = targetVisual.Compositor.CreateScopedBatch(Microsoft.UI.Composition.CompositionBatchTypes.Animation);
+        batch.Completed += (s, e) =>
+        {
+            Debug.WriteLine($"[INFO] Scale animation completed for {target.GetType().Name}");
+            if (!_reversing)
+            {
+                _reversing = true;
+                AnimateUIElementScale(Final, TimeSpan.FromSeconds(Seconds), target, EaseMode, Microsoft.UI.Composition.AnimationDirection.Reverse);
+            }
+        };
+
+        targetVisual.StartAnimation("Offset", scaleAnimation);
+
+        // You must call End to get the completed event to fire.
+        batch.End();
+
+
         targetVisual.StartAnimation("Scale", scaleAnimation);
     }
 
