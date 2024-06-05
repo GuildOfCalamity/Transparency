@@ -7,6 +7,7 @@ using ICompositionSupportsSystemBackdrop = Microsoft.UI.Composition.IComposition
 
 using Windows.UI;
 using Compositor = Windows.UI.Composition.Compositor;
+using Microsoft.UI.Xaml.Hosting;
 
 namespace Transparency.Support;
 

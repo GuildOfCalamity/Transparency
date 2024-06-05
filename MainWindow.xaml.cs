@@ -25,6 +25,8 @@ using Transparency.ViewModels;
 using Transparency.Services;
 
 using CommunityToolkit.WinUI.Helpers;
+using System.Runtime.InteropServices;
+using Microsoft.UI.Xaml.Hosting;
 
 namespace Transparency;
 
@@ -46,13 +48,38 @@ public sealed partial class MainWindow : Window
     ConfigWindow? cfgWin;
     MainViewModel? ViewModel = App.Current.Services.GetService<MainViewModel>();
     FileLogger? Logger = (FileLogger?)App.Current.Services.GetService<ILogger>();
-
-    HWND Handle;
+    Windows.Win32.Foundation.HWND Handle;
     WINDOW_EX_STYLE WinExStyle
     {
         get => (WINDOW_EX_STYLE)PInvoke.GetWindowLong(Handle, Windows.Win32.UI.WindowsAndMessaging.WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
         set => _ = PInvoke.SetWindowLong(Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, (int)value);
     }
+
+    #region [Rounded Window Test]
+    // PInvoke declarations
+    [DllImport("gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+    private static extern IntPtr CreateRoundRectRgn(
+        int nLeftRect,     // x-coordinate of upper-left corner
+        int nTopRect,      // y-coordinate of upper-left corner
+        int nRightRect,    // x-coordinate of lower-right corner
+        int nBottomRect,   // y-coordinate of lower-right corner
+        int nWidthEllipse, // height of ellipse
+        int nHeightEllipse // width of ellipse
+    );
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowRgn")]
+    private static extern int SetWindowRgn(
+        IntPtr hWnd,       // Handle to the window
+        IntPtr hRgn,       // Handle to the region
+        bool bRedraw       // Boolean to redraw the window
+    );
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
+
+    private const int SM_CXSCREEN = 0;
+    private const int SM_CYSCREEN = 1;
+    #endregion
 
     public MainWindow()
     {
@@ -68,6 +95,11 @@ public sealed partial class MainWindow : Window
         Content.Background = new SolidColorBrush(Colors.Green);
         Content.Background = new SolidColorBrush(Colors.Transparent);
         //Content.Background = (SolidColorBrush)App.Current.Resources["ApplicationPageBackgroundThemeBrush"];
+
+        #region [just experimenting]
+        //ApplyRoundedCorners(hwnd);
+        //CreateGradientBackdrop();
+        #endregion
 
         if (App.IsPackaged)
         {
@@ -95,6 +127,71 @@ public sealed partial class MainWindow : Window
         {
             Logger?.WriteLine($"The app is running as Unpackaged.", LogLevel.Debug);
         }
+    }
+
+    void CreateGradientBackdrop(FrameworkElement fe)
+    {
+        // Get the FrameworkElement's compositor.
+        var compositor = ElementCompositionPreview.GetElementVisual(fe).Compositor;
+        if (compositor == null) { return; }
+        var gb = compositor.CreateLinearGradientBrush();
+
+        // Define gradient stops.
+        var gradientStops = gb.ColorStops;
+
+        if (App.Current.Resources.TryGetValue("GC1", out object clr))
+        {
+            var clr1 = (Windows.UI.Color)App.Current.Resources["GC1"];
+            var clr2 = (Windows.UI.Color)App.Current.Resources["GC2"];
+            var clr3 = (Windows.UI.Color)App.Current.Resources["GC3"];
+            var clr4 = (Windows.UI.Color)App.Current.Resources["GC4"];
+            gradientStops.Insert(0, compositor.CreateColorGradientStop(0.0f, clr1));
+            gradientStops.Insert(1, compositor.CreateColorGradientStop(0.3f, clr2));
+            gradientStops.Insert(2, compositor.CreateColorGradientStop(0.6f, clr3));
+            gradientStops.Insert(3, compositor.CreateColorGradientStop(1.0f, clr4));
+        }
+        else
+        {
+            gradientStops.Insert(0, compositor.CreateColorGradientStop(0.0f, Windows.UI.Color.FromArgb(55, 255, 0, 0)));   // Red
+            gradientStops.Insert(1, compositor.CreateColorGradientStop(0.3f, Windows.UI.Color.FromArgb(55, 255, 216, 0))); // Yellow
+            gradientStops.Insert(2, compositor.CreateColorGradientStop(0.6f, Windows.UI.Color.FromArgb(55, 0, 255, 0)));   // Green
+            gradientStops.Insert(3, compositor.CreateColorGradientStop(1.0f, Windows.UI.Color.FromArgb(55, 0, 0, 255)));   // Blue
+        }
+
+        // Set the direction of the gradient.
+        gb.StartPoint = new System.Numerics.Vector2(0, 0);
+        gb.EndPoint = new System.Numerics.Vector2(1, 1);
+
+        // Create a sprite visual and assign the gradient brush.
+        var spriteVisual = Compositor.CreateSpriteVisual();
+        spriteVisual.Brush = gb;
+
+        // Set the size of the sprite visual to cover the entire window.
+        spriteVisual.Size = new System.Numerics.Vector2((float)fe.ActualSize.X, (float)fe.ActualSize.Y);
+
+        // Handle the SizeChanged event to adjust the size of the sprite visual when the window is resized.
+        fe.SizeChanged += (s, e) =>
+        {
+            spriteVisual.Size = new System.Numerics.Vector2((float)fe.ActualWidth, (float)fe.ActualHeight);
+        };
+
+        // Set the sprite visual as the background of the FrameworkElement.
+        ElementCompositionPreview.SetElementChildVisual(fe, spriteVisual);
+    }
+
+    /// <summary>
+    /// I don't believe this is compatible with a LAYERED window.
+    /// </summary>
+    void ApplyRoundedCorners(IntPtr hWnd)
+    {
+        if (hWnd == IntPtr.Zero)
+            return;
+
+        int radius = 20;
+        //IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        // Create a rounded rectangle region
+        IntPtr hrgn = CreateRoundRectRgn(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), radius, radius);
+        SetWindowRgn(hWnd, hrgn, true);
     }
 
     void SetTopControlRow()

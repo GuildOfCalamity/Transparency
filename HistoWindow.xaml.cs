@@ -1,11 +1,9 @@
 // Ignore Spelling: Histo
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
@@ -14,7 +12,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.Extensions.DependencyInjection;
 
 using Windows.Win32;
-using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using WinRT.Interop;
 
@@ -41,7 +38,7 @@ public sealed partial class HistoWindow : Window
     ConfigWindow? cfgWin;
     MainViewModel? ViewModel = App.Current.Services.GetService<MainViewModel>();
     FileLogger? Logger = (FileLogger?)App.Current.Services.GetService<ILogger>();
-    HWND Handle;
+    Windows.Win32.Foundation.HWND Handle;
     WINDOW_EX_STYLE WinExStyle
     {
         get => (WINDOW_EX_STYLE)PInvoke.GetWindowLong(Handle, Windows.Win32.UI.WindowsAndMessaging.WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);

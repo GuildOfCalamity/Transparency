@@ -33,7 +33,7 @@
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <!-- 
-      Get rid of all the unecessary pathing that MS adds and 
+      Get rid of all the unnecessary pathing that MS adds and 
       makes the output match the traditional .NET Framework builds.
     -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

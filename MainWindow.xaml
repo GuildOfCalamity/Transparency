@@ -22,13 +22,12 @@
         x:Name="Content"
         BorderBrush="{ThemeResource GradientBorderBrush}"
         BorderThickness="{x:Bind ViewModel.BorderSize, Mode=OneWay}"
-        CornerRadius="6">
-
+        CornerRadius="10">
         <Grid
             x:Name="rootGrid"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            CornerRadius="6">
+            CornerRadius="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="40" />
@@ -71,7 +70,7 @@
                 Unit="CPU %"
                 Value="{x:Bind ViewModel.CurrentCPU, Mode=OneWay}">
                 <ctrl:RadialGauge.TickBrush>
-                    <SolidColorBrush Opacity="0.65" Color="BurlyWood" />
+                    <SolidColorBrush Opacity="{x:Bind ViewModel.Config.opacity, Mode=OneWay}" Color="BurlyWood" />
                 </ctrl:RadialGauge.TickBrush>
             </ctrl:RadialGauge>
             <!--#endregion-->
