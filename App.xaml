@@ -227,7 +227,9 @@
             <!--
                 Portions of the "Glow" stylers taken from https://github.com/FireCubeStudios/Clippy/blob/master/CubeKit.UI/Styles/GlowGradientUI.xaml
                 I've modified these to remove the drop shadow panel (CommunityToolkit) since it will be deprecated soon.
+                The shadow panel has been replaced with my own CompositionShadow control.
             -->
+
             <!--#region [Glow Switch Styler]-->
             <Style x:Key="GlowSwitch" TargetType="ToggleSwitch">
                 <Setter Property="Foreground" Value="{ThemeResource ToggleSwitchContentForeground}" />
@@ -2038,7 +2040,7 @@
             </Style>
             <!--#endregion-->
 
-            <!--#region [Glow RepeatButton Styler]-->
+            <!--#region [Glow Down RepeatButton Styler]-->
             <Style x:Key="DownToolbarRepeatButton" TargetType="RepeatButton">
                 <Setter Property="BackgroundSizing" Value="OuterBorderEdge" />
                 <Setter Property="Foreground" Value="{ThemeResource ToggleButtonForeground}" />
@@ -2181,7 +2183,7 @@
             </Style>
             <!--#endregion-->
 
-            <!--#region [Glow RepeatButton Styler]-->
+            <!--#region [Glow Up RepeatButton Styler]-->
             <Style x:Key="UpToolbarRepeatButton" TargetType="RepeatButton">
                 <Setter Property="BackgroundSizing" Value="OuterBorderEdge" />
                 <Setter Property="Foreground" Value="{ThemeResource ToggleButtonForeground}" />

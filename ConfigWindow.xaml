@@ -288,11 +288,18 @@
                 HorizontalAlignment="Left"
                 Foreground="{ThemeResource GradientTextBrush}"
                 Header=""
-                IsOn="False"
+                IsOn="{x:Bind ViewModel.Config.autoStart, Mode=TwoWay}"
                 OffContent="Login Start Disabled"
                 OnContent="Login Start Enabled"
                 Style="{ThemeResource GlowSwitch}"
-                ToolTipService.ToolTip="NOT IMPLEMENTED (in development)" />
+                Toggled="{x:Bind ViewModel.ToggleSwitchOnToggled, Mode=OneWay}"
+                ToolTipService.ToolTip="Add application to startup at logon">
+                <!--<interact:Interaction.Behaviors>
+                    <interactcore:EventTriggerBehavior EventName="Toggled">
+                        <interactcore:InvokeCommandAction Command="{x:Bind ViewModel.OpenOnWindowsStartupCommand, Mode=OneWay}" />
+                    </interactcore:EventTriggerBehavior>
+                </interact:Interaction.Behaviors>-->
+            </ToggleSwitch>
             <!--#endregion-->
 
             <ctrl:SeparatorLine Margin="1,5,0,0" />

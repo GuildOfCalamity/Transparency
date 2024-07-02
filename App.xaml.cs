@@ -170,6 +170,16 @@ public partial class App : Application
             try
             {
                 LocalConfig = ConfigHelper.LoadConfig();
+                // If we started from the registry, then set the current directory to the application's directory.
+                if (LocalConfig != null && LocalConfig.autoStart && !IsPackaged)
+                {
+                    var exePath = Assembly.GetExecutingAssembly().Location;
+                    var exeDir = Path.GetDirectoryName(exePath);
+                    if (!string.IsNullOrEmpty(exeDir))
+                    {
+                        Directory.SetCurrentDirectory(exeDir);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -193,7 +203,8 @@ public partial class App : Application
                     msRefresh = 2000,
                     windowW = m_width,
                     windowH = m_height,
-                    background = "001F1FFF"
+                    background = "001F1FFF",
+                    autoStart = false,
                 };
                 ConfigHelper.SaveConfig(LocalConfig);
             }
@@ -208,6 +219,18 @@ public partial class App : Application
             m_window = new HistoWindow();
         else
             m_window = new MainWindow();
+
+        // Get AppActivationArguments
+        var appInst = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent();
+        if (appInst != null)
+        {
+            var activationArguments = appInst.GetActivatedEventArgs();
+            var isStartupTask = activationArguments.Data is Windows.ApplicationModel.Activation.IStartupTaskActivatedEventArgs;
+            if (isStartupTask)
+            {
+                Debug.WriteLine($"[INFO] StartupTask detected at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
+            }
+        }
 
         var appWin = GetAppWindow(m_window);
         if (appWin != null)
@@ -234,6 +257,11 @@ public partial class App : Application
             // The changed event holds a bunch of juicy info that we can extrapolate.
             appWin.Changed += (s, args) =>
             {
+                if (args.DidSizeChange)
+                {
+                    Debug.WriteLine($"[INFO] Window size changed to {s.Size.Width},{s.Size.Height}");
+                }
+
                 if (args.DidPositionChange)
                 {
                     // Add debounce in scenarios where this event could be hammered.
@@ -241,7 +269,7 @@ public partial class App : Application
                     if (idleTime.TotalSeconds > 1.01d && LocalConfig != null)
                     {
                         _lastMove = DateTime.Now;
-                        if (s.Position.X > 0 && s.Position.Y > 0)
+                        if (s.Position.X > 0 && s.Position.Y > 0 && s.Size.Height > 0 && s.Size.Width > 0)
                         {
                             // This property is initially null. Once a window has been shown it always has a
                             // presenter applied, either one applied by the platform or applied by the app itself.

@@ -26,6 +26,7 @@
     <FileVersion>1.0.0.1</FileVersion>
     <AssemblyVersion>1.0.0.1</AssemblyVersion>
     <PackageId>Transparency2024</PackageId>
+    <Title>Transparency</Title>
     <Authors>The Guild</Authors>
     <!-- 
       WindowsPackageType defines whether your app is packaged (MSIX) or unpackaged (None) 
@@ -65,6 +66,7 @@
     <None Remove="Assets\Fonts\Aptos.ttf" />
     <None Remove="Assets\Fonts\OdinRounded.ttf" />
     <None Remove="Assets\Spinner.png" />
+    <None Remove="Assets\SplashScreen.png" />
     <None Remove="Assets\WinTransparent.ico" />
     <None Remove="Assets\WinTransparent.png" />
     <None Remove="ConfigWindow.xaml" />
@@ -74,13 +76,8 @@
   </ItemGroup>
     
   <ItemGroup>
-    <Content Include="Assets\SplashScreen.scale-200.png" />
-    <Content Include="Assets\LockScreenLogo.scale-200.png" />
-    <Content Include="Assets\Square150x150Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.scale-200.png" />
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
-    <Content Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -137,14 +134,38 @@
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
 
-    <!-- 
+  <!-- 
       This target will remove the language folders inside the build output except the specified one. 
-    -->
-    <Target Name="RemoveFoldersWithMuiFiles" AfterTargets="Build">
+  -->
+    <Target Name="RemoveFoldersWithMuiFiles" Condition="'$(WindowsPackageType)' == 'None'" AfterTargets="Build">
         <ItemGroup>
             <RemovingFiles Include="$(OutDir)*\*.mui" Exclude="$(OutDir)en-us\*.mui" />
             <RemovingFolders Include="@(RemovingFiles->'%(RootDir)%(Directory)')" />
+            <RemovingCS Include="$(OutDir)cs" />
+            <RemovingDE Include="$(OutDir)de" />
+            <RemovingES Include="$(OutDir)es" />
+            <RemovingFR Include="$(OutDir)fr" />
+            <RemovingIT Include="$(OutDir)it" />
+            <RemovingJA Include="$(OutDir)ja" />
+            <RemovingKO Include="$(OutDir)ko" />
+            <RemovingPL Include="$(OutDir)pl" />
+            <RemovingRU Include="$(OutDir)ru" />
+            <RemovingTR Include="$(OutDir)tr" />
+            <RemovingZHS Include="$(OutDir)zh-Hans" />
+            <RemovingZHT Include="$(OutDir)zh-Hant" />
         </ItemGroup>
         <RemoveDir Directories="@(RemovingFolders)" />
+        <RemoveDir Directories="@(RemovingCS)" />
+        <RemoveDir Directories="@(RemovingDE)" />
+        <RemoveDir Directories="@(RemovingES)" />
+        <RemoveDir Directories="@(RemovingFR)" />
+        <RemoveDir Directories="@(RemovingIT)" />
+        <RemoveDir Directories="@(RemovingJA)" />
+        <RemoveDir Directories="@(RemovingKO)" />
+        <RemoveDir Directories="@(RemovingPL)" />
+        <RemoveDir Directories="@(RemovingRU)" />
+        <RemoveDir Directories="@(RemovingTR)" />
+        <RemoveDir Directories="@(RemovingZHS)" />
+        <RemoveDir Directories="@(RemovingZHT)" />
     </Target>
 </Project>
