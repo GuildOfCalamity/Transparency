@@ -21,8 +21,10 @@ using Transparency.Controls;
 using Transparency.Models;
 using System.Threading;
 using Microsoft.UI.Xaml.Controls;
-
-
+using Windows.ApplicationModel;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Foundation;
+using System.Runtime.CompilerServices;
 
 namespace Transparency.ViewModels;
 
@@ -125,6 +127,12 @@ public class MainViewModel : ObservableRecipient
         }
     }
 
+    public bool OpenOnWindowsStartup
+    {
+        get => Config.autoStart;
+        set => SetProperty(ref Config.autoStart, value);
+    }
+
     public Config? Config
     {
         get => App.LocalConfig;
@@ -132,6 +140,7 @@ public class MainViewModel : ObservableRecipient
     #endregion
 
     public ICommand KeyDownCommand { get; }
+    public ICommand OpenOnWindowsStartupCommand { get; }
 
     FileLogger? Logger = (FileLogger?)App.Current.Services.GetService<ILogger>();
 
@@ -385,6 +394,12 @@ public class MainViewModel : ObservableRecipient
             IsBusy = false;
         });
 
+        OpenOnWindowsStartupCommand = new RelayCommand<bool>(async (obj) => 
+        { 
+            await OpenOnWindowsStartupAsync(obj); 
+        });
+        _ = DetectOpenAtStartupAsync();
+
         #region [PerfCounter Init]
         // Instantiating a PerformanceCounter can take up to 20+ seconds, so we'll queue this on another thread.
         Task.Run(() =>
@@ -444,20 +459,6 @@ public class MainViewModel : ObservableRecipient
         }
     }
     #endregion
-
-    void ConfigureRefreshTimer(int interval)
-    {
-        _timer = new DispatcherTimer();
-        _timer.Interval = TimeSpan.FromMilliseconds(interval);
-        _timer.Tick += (_, _) =>
-        {
-            if (!App.IsClosing)
-                CurrentCPU = (int)GetCPU();
-            else
-                _timer?.Stop();
-        };
-        _timer?.Start();
-    }
 
     #region [PerfCounter]
     int _lastValue = -1;
@@ -548,5 +549,265 @@ public class MainViewModel : ObservableRecipient
         return scaledValue;
     }
 
+    #endregion
+
+    void ConfigureRefreshTimer(int interval)
+    {
+        _timer = new DispatcherTimer();
+        _timer.Interval = TimeSpan.FromMilliseconds(interval);
+        _timer.Tick += (_, _) =>
+        {
+            if (!App.IsClosing)
+                CurrentCPU = (int)GetCPU();
+            else
+                _timer?.Stop();
+        };
+        _timer?.Start();
+    }
+
+    #region [StartupTask]
+    public void ToggleSwitchOnToggled(object sender, RoutedEventArgs e)
+    {
+        var ts = sender as ToggleSwitch;
+        if (ts != null)
+        {
+            OpenOnWindowsStartupCommand.Execute(ts.IsOn);
+        }
+    }
+
+    public async Task OpenOnWindowsStartupAsync(bool toggleState)
+    {
+        var stateMode = await ReadState();
+
+        bool state = stateMode switch
+        {
+            StartupTaskState.Enabled => true,
+            StartupTaskState.EnabledByPolicy => true,
+            StartupTaskState.Disabled => false,
+            StartupTaskState.DisabledByUser => false,
+            StartupTaskState.DisabledByPolicy => false,
+            _ => false,
+        };
+
+        Config.autoStart = toggleState;
+
+        try
+        {
+            if (App.IsPackaged)
+            {
+                StartupTask startupTask = await StartupTask.GetAsync("3AA55462-A5FA-DEAD-BEEF-712D0B6CDEBB");
+                if (toggleState)
+                    await startupTask.RequestEnableAsync();
+                else
+                    startupTask.Disable();
+            }
+            else
+            {
+                if (toggleState)
+                    EnableRegistryStartup();
+                else
+                    DisableRegistryStartup();
+            }
+        }
+        catch (RuntimeWrappedException rwe) // catch any non-CLS exceptions
+        {
+            String? s = rwe.WrappedException as String;
+            if (s != null)
+                Debug.WriteLine($"[WARNING] {s}");
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLine($"StartupTask.GetAsync: {ex.Message}", LogLevel.Error);
+        }
+
+        await DetectOpenAtStartupAsync();
+    }
+
+    public async Task DetectOpenAtStartupAsync()
+    {
+        var stateMode = await ReadState();
+
+        switch (stateMode)
+        {
+            case StartupTaskState.Disabled:
+                Config.autoStart = false;
+                break;
+            case StartupTaskState.Enabled:
+                Config.autoStart = true;
+                break;
+            case StartupTaskState.DisabledByPolicy:
+                Config.autoStart = false;
+                break;
+            case StartupTaskState.DisabledByUser:
+                Config.autoStart = false;
+                break;
+            case StartupTaskState.EnabledByPolicy:
+                Config.autoStart = true;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// In regards to auto-start apps, a packaged app has different requirements than an unpackaged app.
+    /// For packaged apps the registry's Windows Store AppID contains two keys a "State" and a "UserEnabledStartupOnce".
+    /// If "State is set to 2 then the app will be invoked at logon.
+    /// If "State is set to 0 then the app will not be invoked at logon.
+    /// <b>HKCU\SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData</b>
+    /// </para>
+    /// <para>
+    /// For unpackaged apps the path to the assembly must be added to the following location in the registry:
+    /// <b>HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run</b>
+    /// At logon, if the assembly path exists, the app will be invoked.
+    /// <i>The unpackaged app must have enough rights to access the registry.</i>
+    /// </para>
+    /// </summary>
+    /// <returns><see cref="Windows.ApplicationModel.StartupTaskState"/></returns>
+    public async Task<Windows.ApplicationModel.StartupTaskState> ReadState()
+    {
+        try
+        {
+            if (App.IsPackaged)
+            {
+                var state = await StartupTask.GetAsync("3AA55462-A5FA-DEAD-BEEF-712D0B6CDEBB");
+                return state.State;
+            }
+            else
+            {
+                switch (CheckRegistryStartup())
+                {
+                    case false: 
+                        return StartupTaskState.Disabled;
+                    case true: 
+                        return StartupTaskState.Enabled;
+                }
+            }
+        }
+        catch (RuntimeWrappedException rwe) // catch any non-CLS exceptions
+        {
+            String? s = rwe.WrappedException as String;
+            if (s != null)
+                Debug.WriteLine($"[WARNING] {s}");
+            return StartupTaskState.Disabled;
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLine($"StartupTask.GetAsync: {ex.Message}", LogLevel.Error);
+            return StartupTaskState.Disabled;
+        }
+    }
+
+    public bool CheckRegistryStartup()
+    {
+        bool result = false;
+        try
+        {
+            object? regVal = null;
+            string fallback = string.Empty;
+            if (App.IsPackaged)
+                fallback = Windows.ApplicationModel.Package.Current.InstalledLocation.Path;
+            else
+                fallback = System.AppContext.BaseDirectory; // -or- Directory.GetCurrentDirectory()
+            var procName = Process.GetCurrentProcess()?.MainModule?.FileName ?? System.IO.Path.Combine(fallback, $"{App.GetCurrentAssemblyName()}.exe");
+            using (var view64 = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64))
+            {
+                using (var clsid64 = view64.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    regVal = clsid64?.GetValue($"AutoStart{App.GetCurrentAssemblyName()}");
+                    if (regVal == null)
+                    {
+                        Logger?.WriteLine($"'{App.GetCurrentAssemblyName()}' does not exist in registry startup.", LogLevel.Info);
+                        result = false;
+                    }
+                    else
+                    {
+                        Logger?.WriteLine($"'{App.GetCurrentAssemblyName()}' already exists in registry startup.", LogLevel.Info);
+                        result = true;
+                    }
+                }
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLine($"Error during registry startup check: {ex.Message}", LogLevel.Error);
+            return false;
+        }
+    }
+
+    public bool EnableRegistryStartup()
+    {
+        bool result = false;
+        try
+        {
+            object? regVal = null;
+
+            string fallback = string.Empty;
+            if (App.IsPackaged)
+                fallback = Windows.ApplicationModel.Package.Current.InstalledLocation.Path;
+            else
+                fallback = System.AppContext.BaseDirectory; // -or- Directory.GetCurrentDirectory()
+            var procName = Process.GetCurrentProcess()?.MainModule?.FileName ?? System.IO.Path.Combine(fallback, $"{App.GetCurrentAssemblyName()}.exe");
+            using (var view64 = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64))
+            {
+                using (var clsid64 = view64.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    regVal = clsid64?.GetValue($"AutoStart{App.GetCurrentAssemblyName()}");
+                    if (regVal == null)
+                    {
+                        clsid64?.SetValue($"AutoStart{App.GetCurrentAssemblyName()}", procName, Microsoft.Win32.RegistryValueKind.String);
+                        Logger?.WriteLine($"Added '{App.GetCurrentAssemblyName()}' to registry startup.", LogLevel.Info);
+                        result = true;
+                    }
+                    else if (regVal != null)
+                    {
+                        Logger?.WriteLine($"'{App.GetCurrentAssemblyName()}' already exists in registry startup.", LogLevel.Info);
+                        result = true;
+                    }
+                }
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLine($"Error during registry startup check: {ex.Message}", LogLevel.Error);
+            return false;
+        }
+    }
+
+    public bool DisableRegistryStartup()
+    {
+        bool result = false;
+        try
+        {
+            object? regVal = null;
+
+            string fallback = string.Empty;
+            if (App.IsPackaged)
+                fallback = Windows.ApplicationModel.Package.Current.InstalledLocation.Path;
+            else
+                fallback = System.AppContext.BaseDirectory; // -or- Directory.GetCurrentDirectory()
+            var procName = Process.GetCurrentProcess()?.MainModule?.FileName ?? System.IO.Path.Combine(fallback, $"{App.GetCurrentAssemblyName()}.exe");
+            using (var view64 = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64))
+            {
+                using (var clsid64 = view64.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    regVal = clsid64?.GetValue($"AutoStart{App.GetCurrentAssemblyName()}");
+                    if (regVal != null)
+                    {
+                        clsid64?.DeleteValue($"AutoStart{App.GetCurrentAssemblyName()}", false);
+                        Logger?.WriteLine($"Removed '{App.GetCurrentAssemblyName()}' from registry startup.", LogLevel.Info);
+                        result = true;
+                    }
+                }
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Logger?.WriteLine($"Error during registry startup check: {ex.Message}", LogLevel.Error);
+            return false;
+        }
+    }
     #endregion
 }

@@ -27,6 +27,7 @@ using Transparency.Services;
 using CommunityToolkit.WinUI.Helpers;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Transparency;
 
@@ -54,6 +55,18 @@ public sealed partial class MainWindow : Window
         get => (WINDOW_EX_STYLE)PInvoke.GetWindowLong(Handle, Windows.Win32.UI.WindowsAndMessaging.WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
         set => _ = PInvoke.SetWindowLong(Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, (int)value);
     }
+
+    #region [Dragging Props]
+    int initialPointerX = 0;
+    int initialPointerY = 0;
+    int windowStartX = 0;
+    int windowStartY = 0;
+    bool isMoving = false;
+    Microsoft.UI.Windowing.AppWindow appW;
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern int GetCursorPos(out Windows.Graphics.PointInt32 lpPoint);
+    #endregion
 
     #region [Rounded Window Test]
     // PInvoke declarations
@@ -91,6 +104,7 @@ public sealed partial class MainWindow : Window
         var hwnd = WindowNative.GetWindowHandle(this);
         Handle = new Windows.Win32.Foundation.HWND(hwnd);
         WinExStyle |= WINDOW_EX_STYLE.WS_EX_LAYERED; // We'll use WS_EX_LAYERED, not WS_EX_TRANSPARENT, for the effect.
+        WinExStyle |= WINDOW_EX_STYLE.WS_EX_TOOLWINDOW; // Prevent accidental Minimize/Maximize.
         SystemBackdrop = new TransparentBackdrop();
         Content.Background = new SolidColorBrush(Colors.Green);
         Content.Background = new SolidColorBrush(Colors.Transparent);
@@ -127,6 +141,15 @@ public sealed partial class MainWindow : Window
         {
             Logger?.WriteLine($"The app is running as Unpackaged.", LogLevel.Debug);
         }
+
+        #region [Dragging]
+        //IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        Microsoft.UI.WindowId WndID = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+        appW = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(WndID);
+        rootGrid.PointerPressed += RootGrid_PointerPressed;
+        rootGrid.PointerMoved += RootGrid_PointerMoved;
+        rootGrid.PointerReleased += RootGrid_PointerReleased;
+        #endregion
     }
 
     void CreateGradientBackdrop(FrameworkElement fe)
@@ -297,6 +320,50 @@ public sealed partial class MainWindow : Window
         WindowId windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
 
         return Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+    }
+    #endregion
+
+    #region [Drag Events]
+    void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        Debug.WriteLine($"[INFO] {((Grid)sender).Name} PointerPressed");
+        ((UIElement)sender).CapturePointer(e.Pointer);
+        var currentPoint = e.GetCurrentPoint((UIElement)sender);
+        if (currentPoint.Properties.IsLeftButtonPressed)
+        {
+            ((UIElement)sender).CapturePointer(e.Pointer);
+            windowStartX = appW.Position.X;
+            windowStartY = appW.Position.Y;
+            Windows.Graphics.PointInt32 pt;
+            GetCursorPos(out pt); // user32.dll
+            initialPointerX = pt.X;
+            initialPointerY = pt.Y;
+            isMoving = true;
+        }
+        else if (currentPoint.Properties.IsRightButtonPressed)
+        {
+            e.Handled = true;
+            Application.Current.Exit();
+        }
+    }
+
+    void RootGrid_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        Debug.WriteLine($"[INFO] {((Grid)sender).Name} PointerReleased");
+        (sender as UIElement)?.ReleasePointerCapture(e.Pointer);
+        isMoving = false;
+    }
+
+    void RootGrid_PointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        var currentPoint = e.GetCurrentPoint((UIElement)sender);
+        if (currentPoint.Properties.IsLeftButtonPressed)
+        {
+            Windows.Graphics.PointInt32 pt;
+            GetCursorPos(out pt);
+            if (isMoving)
+                appW.Move(new Windows.Graphics.PointInt32(windowStartX + (pt.X - initialPointerX), windowStartY + (pt.Y - initialPointerY)));
+        }
     }
     #endregion
 }

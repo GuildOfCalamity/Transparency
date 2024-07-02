@@ -55,6 +55,7 @@ public sealed partial class HistoWindow : Window
         var hwnd = WindowNative.GetWindowHandle(this);
         Handle = new Windows.Win32.Foundation.HWND(hwnd);
         WinExStyle |= WINDOW_EX_STYLE.WS_EX_LAYERED; // We'll use WS_EX_LAYERED, not WS_EX_TRANSPARENT, for the effect.
+        WinExStyle |= WINDOW_EX_STYLE.WS_EX_TOOLWINDOW; // Prevent accidental Minimize/Maximize.
         SystemBackdrop = new TransparentBackdrop();
         Content.Background = new SolidColorBrush(Colors.Green);
         Content.Background = new SolidColorBrush(Colors.Transparent);
