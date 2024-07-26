@@ -1,17 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Numerics;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
-using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.Xaml.Interactivity;
 
-using Windows.Foundation;
-
 namespace Transparency.Behaviors;
-
 
 /// <summary>
 /// <see cref="Microsoft.UI.Xaml.Controls.InfoBar"/> <see cref="Microsoft.Xaml.Interactivity.Behavior"/>.

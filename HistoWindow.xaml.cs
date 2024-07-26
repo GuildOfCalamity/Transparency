@@ -20,6 +20,8 @@ using Transparency.ViewModels;
 using Transparency.Services;
 
 using CommunityToolkit.WinUI.Helpers;
+using System.Runtime.InteropServices;
+using Microsoft.UI.Xaml.Input;
 
 
 namespace Transparency;
@@ -45,6 +47,18 @@ public sealed partial class HistoWindow : Window
         set => _ = PInvoke.SetWindowLong(Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, (int)value);
     }
 
+    #region [Dragging Props]
+    int initialPointerX = 0;
+    int initialPointerY = 0;
+    int windowStartX = 0;
+    int windowStartY = 0;
+    bool isMoving = false;
+    Microsoft.UI.Windowing.AppWindow appW;
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern int GetCursorPos(out Windows.Graphics.PointInt32 lpPoint);
+    #endregion
+
     public HistoWindow()
     {
         Debug.WriteLine($"{System.Reflection.MethodBase.GetCurrentMethod()?.DeclaringType?.Name}__{System.Reflection.MethodBase.GetCurrentMethod()?.Name} [{DateTime.Now.ToString("hh:mm:ss.fff tt")}]");
@@ -60,6 +74,15 @@ public sealed partial class HistoWindow : Window
         Content.Background = new SolidColorBrush(Colors.Green);
         Content.Background = new SolidColorBrush(Colors.Transparent);
         //Content.Background = (SolidColorBrush)App.Current.Resources["ApplicationPageBackgroundThemeBrush"];
+
+        #region [Dragging]
+        //IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        Microsoft.UI.WindowId WndID = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+        appW = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(WndID);
+        rootGrid.PointerPressed += RootGrid_PointerPressed;
+        rootGrid.PointerMoved += RootGrid_PointerMoved;
+        rootGrid.PointerReleased += RootGrid_PointerReleased;
+        #endregion
     }
 
     void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
@@ -165,6 +188,50 @@ public sealed partial class HistoWindow : Window
         WindowId windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
 
         return Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+    }
+    #endregion
+
+    #region [Drag Events]
+    void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        Debug.WriteLine($"[INFO] {((Grid)sender).Name} PointerPressed");
+        ((UIElement)sender).CapturePointer(e.Pointer);
+        var currentPoint = e.GetCurrentPoint((UIElement)sender);
+        if (currentPoint.Properties.IsLeftButtonPressed)
+        {
+            ((UIElement)sender).CapturePointer(e.Pointer);
+            windowStartX = appW.Position.X;
+            windowStartY = appW.Position.Y;
+            Windows.Graphics.PointInt32 pt;
+            GetCursorPos(out pt); // user32.dll
+            initialPointerX = pt.X;
+            initialPointerY = pt.Y;
+            isMoving = true;
+        }
+        else if (currentPoint.Properties.IsRightButtonPressed)
+        {
+            e.Handled = true;
+            Application.Current.Exit();
+        }
+    }
+
+    void RootGrid_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        Debug.WriteLine($"[INFO] {((Grid)sender).Name} PointerReleased");
+        (sender as UIElement)?.ReleasePointerCapture(e.Pointer);
+        isMoving = false;
+    }
+
+    void RootGrid_PointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        var currentPoint = e.GetCurrentPoint((UIElement)sender);
+        if (currentPoint.Properties.IsLeftButtonPressed)
+        {
+            Windows.Graphics.PointInt32 pt;
+            GetCursorPos(out pt);
+            if (isMoving)
+                appW.Move(new Windows.Graphics.PointInt32(windowStartX + (pt.X - initialPointerX), windowStartY + (pt.Y - initialPointerY)));
+        }
     }
     #endregion
 }

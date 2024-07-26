@@ -24,8 +24,6 @@ namespace Transparency.Behaviors;
 public class SlideAnimationBehavior : Behavior<FrameworkElement>
 {
     #region [Props]
-    DispatcherTimer? _timer;
-
     /// <summary>
     /// Identifies the <see cref="Seconds"/> property for the animation.
     /// </summary>

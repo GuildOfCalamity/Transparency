@@ -21,6 +21,7 @@ using Transparency.Support;
 using Transparency.Helpers;
 using Transparency.ViewModels;
 using Transparency.Services;
+using Windows.ApplicationModel.Activation;
 
 namespace Transparency;
 
@@ -215,22 +216,51 @@ public partial class App : Application
         }
         #endregion
 
-        if (LocalConfig is not null && LocalConfig.useHistogram)
-            m_window = new HistoWindow();
-        else
-            m_window = new MainWindow();
-
-        // Get AppActivationArguments
+        #region [AppActivationArguments]
         var appInst = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent();
         if (appInst != null)
         {
             var activationArguments = appInst.GetActivatedEventArgs();
-            var isStartupTask = activationArguments.Data is Windows.ApplicationModel.Activation.IStartupTaskActivatedEventArgs;
-            if (isStartupTask)
+            DebugLog($"Activation kind: {activationArguments.Kind}");
+
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.IToastNotificationActivatedEventArgs tnaea)
+                Debug.WriteLine($"[INFO] IToastNotificationActivatedEventArgs: {tnaea.UserInput.Count}");
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.IStartupTaskActivatedEventArgs staea)
+                Debug.WriteLine($"[INFO] IStartupTaskActivatedEventArgs: {staea.TaskId}");
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.IBackgroundActivatedEventArgs baea)
+                Debug.WriteLine($"[INFO] IBackgroundActivatedEventArgs: {baea.TaskInstance.SuspendedCount}");
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.IApplicationViewActivatedEventArgs avaea)
+                Debug.WriteLine($"[INFO] IApplicationViewActivatedEventArgs: {avaea.CurrentlyShownApplicationViewId}");
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.IActivatedEventArgsWithUser aeawu)
+                Debug.WriteLine($"[INFO] IActivatedEventArgsWithUser: {aeawu.User.Type}");
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.IDeviceActivatedEventArgs daea)
+                Debug.WriteLine($"[INFO] IDeviceActivatedEventArgs: {daea.DeviceInformationId}");
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.IFileActivatedEventArgs faea)
+                Debug.WriteLine($"[INFO] IFileActivatedEventArgs: {faea.Files.Count}");
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.ISearchActivatedEventArgs saea)
+                Debug.WriteLine($"[INFO] ISearchActivatedEventArgs: {saea.QueryText}");
+
+            if (activationArguments.Data is Windows.ApplicationModel.Activation.ILaunchActivatedEventArgs laea)
             {
-                Debug.WriteLine($"[INFO] StartupTask detected at {DateTime.Now.ToString("hh:mm:ss.fff tt")}");
+                if (laea.PreviousExecutionState == ApplicationExecutionState.NotRunning || laea.PreviousExecutionState == ApplicationExecutionState.Terminated)
+                    DebugLog($"The app did not close normally: {laea.PreviousExecutionState}");
+                else
+                    DebugLog($"The app closed normally: {laea.PreviousExecutionState}");
+            }
+            else if (activationArguments.Data is Windows.ApplicationModel.Activation.IActivatedEventArgs aea)
+            {
+                if (aea.PreviousExecutionState == ApplicationExecutionState.NotRunning || aea.PreviousExecutionState == ApplicationExecutionState.Terminated)
+                    DebugLog($"The app did not close normally: {aea.PreviousExecutionState}");
+                else
+                    DebugLog($"The app closed normally: {aea.PreviousExecutionState}");
             }
         }
+        #endregion
+
+        if (LocalConfig is not null && LocalConfig.useHistogram)
+            m_window = new HistoWindow();
+        else
+            m_window = new MainWindow();
 
         var appWin = GetAppWindow(m_window);
         if (appWin != null)
