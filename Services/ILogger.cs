@@ -45,6 +45,10 @@ public interface ILogger
     Task WriteLineAsync(string message, LogLevel level, [CallerMemberName] string caller = "");
     Task WriteLinesAsync(List<string> messages, LogLevel level, [CallerMemberName] string caller = "");
     string GetCurrentLogPath();
+    string GetCurrentLogPathWithName();
+    string GetCurrentBaseDirectory();
+    string GetTemporaryPath();
+    bool IsFileLocked(FileInfo file);
     #endregion
 }
 
@@ -90,7 +94,7 @@ public class FileLogger : ILogger
 
         lock (threadLock)
         {
-            string fullPath = GetCurrentLogPath();
+            string fullPath = GetCurrentLogPathWithName();
 
             if (!IsPathTooLong(fullPath))
             {
@@ -102,9 +106,9 @@ public class FileLogger : ILogger
                 {
                     using (var fileStream = new StreamWriter(File.OpenWrite(fullPath)))
                     {
-                        // Jump to the end of the file before writing (same as append)…
+                        // Jump to the end of the file before writing (same as append)
                         fileStream.BaseStream.Seek(0, SeekOrigin.End);
-                        // Write the text to the file (adds CRLF natively)…
+                        // Write the text to the file (adds CRLF natively)
                         fileStream.WriteLine("[{0}]\t{1}\t{2}\t{3}", DateTime.Now.ToString("hh:mm:ss.fff tt"), level, string.IsNullOrEmpty(caller) ? "N/A" : caller, message);
                     }
                     OnLogMessage?.Invoke(message, level);
@@ -124,7 +128,7 @@ public class FileLogger : ILogger
 
         lock (threadLock)
         {
-            string fullPath = GetCurrentLogPath();
+            string fullPath = GetCurrentLogPathWithName();
 
             var directory = Path.GetDirectoryName(fullPath);
             try { Directory.CreateDirectory(directory ?? mEmpty); }
@@ -136,11 +140,11 @@ public class FileLogger : ILogger
                 {
                     using (var fileStream = new StreamWriter(File.OpenWrite(fullPath)))
                     {
-                        // Jump to the end of the file before writing (same as append)…
+                        // Jump to the end of the file before writing (same as append)
                         fileStream.BaseStream.Seek(0, SeekOrigin.End);
                         foreach (var message in messages)
                         {
-                            // Write the text to the file (adds CRLF natively)…
+                            // Write the text to the file (adds CRLF natively)
                             fileStream.WriteLine("[{0}]\t{1}\t{2}\t{3}", DateTime.Now.ToString("hh:mm:ss.fff tt"), level, string.IsNullOrEmpty(caller) ? "N/A" : caller, message);
                         }
                     }
@@ -159,7 +163,7 @@ public class FileLogger : ILogger
     {
         if (level < logLevel) { return; }
 
-        string fullPath = GetCurrentLogPath();
+        string fullPath = GetCurrentLogPathWithName();
 
         var directory = Path.GetDirectoryName(fullPath);
         try { Directory.CreateDirectory(directory ?? mEmpty); }
@@ -171,9 +175,9 @@ public class FileLogger : ILogger
             {
                 using (var fileStream = new StreamWriter(File.OpenWrite(fullPath)))
                 {
-                    // Jump to the end of the file before writing (same as append)…
+                    // Jump to the end of the file before writing (same as append)
                     fileStream.BaseStream.Seek(0, SeekOrigin.End);
-                    // Write the text to the file (adds CRLF natively)…
+                    // Write the text to the file (adds CRLF natively)
                     await fileStream.WriteLineAsync(string.Format("[{0}]\t{1}\t{2}\t{3}", DateTime.Now.ToString("hh:mm:ss.fff tt"), level, string.IsNullOrEmpty(caller) ? "N/A" : caller, message));
                 }
                 OnLogMessage?.Invoke(message, level);
@@ -190,7 +194,7 @@ public class FileLogger : ILogger
     {
         if (level < logLevel || messages.Count == 0) { return; }
 
-        string fullPath = GetCurrentLogPath();
+        string fullPath = GetCurrentLogPathWithName();
 
         var directory = Path.GetDirectoryName(fullPath);
         try { Directory.CreateDirectory(directory ?? mEmpty); }
@@ -202,11 +206,11 @@ public class FileLogger : ILogger
             {
                 using (var fileStream = new StreamWriter(File.OpenWrite(fullPath)))
                 {
-                    // Jump to the end of the file before writing (same as append)…
+                    // Jump to the end of the file before writing (same as append)
                     fileStream.BaseStream.Seek(0, SeekOrigin.End);
                     foreach (var message in messages)
                     {
-                        // Write the text to the file (adds CRLF natively)…
+                        // Write the text to the file (adds CRLF natively)
                         await fileStream.WriteLineAsync(string.Format("[{0}]\t{1}\t{2}\t{3}", DateTime.Now.ToString("hh:mm:ss.fff tt"), level, string.IsNullOrEmpty(caller) ? "N/A" : caller, message));
                     }
                 }
@@ -217,29 +221,41 @@ public class FileLogger : ILogger
         else { OnException?.Invoke(new Exception($"Path too long: {fullPath}")); }
     }
 
- 
+     /// <summary>
+     /// Debug helper
+     /// </summary>
+     /// <returns><see cref="List{T}"/></returns>
     public static List<string> GetCallerInfo()
     {
         List<string> frames = new List<string>();
-        StackTrace stackTrace = new StackTrace();
-
+        StackTrace stackTrace = new StackTrace(true);
+        var fn = stackTrace.GetFrame(0)?.GetFileName();
         var fm1 = stackTrace.GetFrame(1)?.GetMethod();
         var fm2 = stackTrace.GetFrame(2)?.GetMethod();
         var fm3 = stackTrace.GetFrame(3)?.GetMethod();
-        frames.Add($"[Method1]: {fm1?.Name}  [Class1]: {fm1?.DeclaringType?.Name}");
-        frames.Add($"[Method2]: {fm2?.Name}  [Class2]: {fm2?.DeclaringType?.Name}");
-        frames.Add($"[Method3]: {fm3?.Name}  [Class3]: {fm3?.DeclaringType?.Name}");
+        frames.Add($"[FileName]: {fn}");
+        frames.Add($"[Method1]: {fm1?.Name}  [Class1]: {fm1?.DeclaringType?.Name}  [NameSpace]: {fm1?.DeclaringType?.Namespace}");
+        frames.Add($"[Method2]: {fm2?.Name}  [Class2]: {fm2?.DeclaringType?.Name}  [NameSpace]: {fm2?.DeclaringType?.Namespace}");
+        frames.Add($"[Method3]: {fm3?.Name}  [Class3]: {fm3?.DeclaringType?.Name}  [NameSpace]: {fm3?.DeclaringType?.Namespace}");
+        frames.Add($"[StackTrace]: {Environment.StackTrace}");
         return frames;
     }
     #endregion
 
     #region [Path helpers]
-    public string GetCurrentLogPath()
+    public string GetCurrentLogPath() => Path.GetDirectoryName(GetCurrentLogPathWithName()) ?? GetRoot();
+    public string GetCurrentLogPathWithName() => Path.Combine(mLogRoot, $@"Logs\{DateTime.Today.Year}\{DateTime.Today.Month.ToString("00")}-{DateTime.Today.ToString("MMMM")}\{mAppName}_{DateTime.Now.ToString("dd")}.log");
+    public string GetCurrentBaseDirectory() => System.AppContext.BaseDirectory; // -or- Directory.GetCurrentDirectory()
+    public string GetTemporaryPath()
     {
-        if (!mLogRoot.EndsWith('\\'))
-            return $@"{mLogRoot}Logs\{DateTime.Today.Year}\{DateTime.Today.Month.ToString("00")}-{DateTime.Today.ToString("MMMM")}\{mAppName}_{DateTime.Now.ToString("dd")}.log";
-        else
-            return $@"{mLogRoot}\Logs\{DateTime.Today.Year}\{DateTime.Today.Month.ToString("00")}-{DateTime.Today.ToString("MMMM")}\{mAppName}_{DateTime.Now.ToString("dd")}.log";
+        var tmp = System.IO.Path.GetTempPath();
+
+        if (string.IsNullOrEmpty(tmp) && !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("TEMP")))
+            tmp = System.Environment.GetEnvironmentVariable("TEMP");
+        else if (string.IsNullOrEmpty(tmp) && !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("TMP")))
+            tmp = System.Environment.GetEnvironmentVariable("TMP");
+
+        return tmp ?? GetRoot();
     }
 
     /// <summary>
@@ -264,7 +280,7 @@ public class FileLogger : ILogger
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"GetRoot: {ex.Message}");
+            Debug.WriteLine($"[ERROR] GetRoot: {ex.Message}");
             return root;
         }
     }
@@ -292,12 +308,12 @@ public class FileLogger : ILogger
     {
         if ((File.GetAttributes(path) & System.IO.FileAttributes.ReparsePoint) == System.IO.FileAttributes.ReparsePoint)
         {
-            Debug.WriteLine("'" + path + "' is a reparse point (skipped)");
+            Debug.WriteLine($"[WARNING] '{path}' is a reparse point (skipped)");
             return false;
         }
         if (!IsReadable(path))
         {
-            Debug.WriteLine("'" + path + "' *ACCESS DENIED* (skipped)");
+            Debug.WriteLine($"[WARNING] '{path}' *ACCESS DENIED* (skipped)");
             return false;
         }
         return true;
@@ -318,6 +334,10 @@ public class FileLogger : ILogger
         {
             return false;
         }
+        catch (DirectoryNotFoundException)
+        {
+            return false;
+        }
         catch (IOException)
         {
             return false;
@@ -330,7 +350,6 @@ public class FileLogger : ILogger
         try
         {
             var tmp = Path.GetFullPath(path);
-
             return false;
         }
         catch (UnauthorizedAccessException)
@@ -344,6 +363,10 @@ public class FileLogger : ILogger
         catch (PathTooLongException)
         {
             return true;
+        }
+        catch (IOException)
+        {
+            return false;
         }
     }
 
@@ -369,13 +392,48 @@ public class FileLogger : ILogger
         }
         catch (UnauthorizedAccessException ex)
         {
-            Console.WriteLine($"UnauthorizedAccess: {ex.Message}");
+            Debug.WriteLine($"[ERROR] UnauthorizedAccess: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"{ex.GetType()}: {ex.Message}");
+            Debug.WriteLine($"[ERROR] {ex.GetType()}: {ex.Message}");
         }
     }
     List<string> LongPathList { get; set; } = new List<string>();
+
+    /// <summary>
+    /// Helper method.
+    /// </summary>
+    /// <param name="file"><see cref="FileInfo"/></param>
+    /// <returns>true if file is in use, false otherwise</returns>
+    public bool IsFileLocked(FileInfo file)
+    {
+        FileStream? stream = null;
+        try
+        {
+            stream = file.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException)
+        {
+            // The file is unavailable because it is:
+            // - still being written to
+            // - or being processed by another thread 
+            // - or does not exist
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+        finally
+        {
+            if (stream != null)
+            {
+                stream.Close();
+                stream = null;
+            }
+        }
+        return false;
+    }
     #endregion
 }

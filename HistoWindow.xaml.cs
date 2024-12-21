@@ -1,27 +1,20 @@
-// Ignore Spelling: Histo
-
 using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
 
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Extensions.DependencyInjection;
 
 using Windows.Win32;
 using Windows.Win32.UI.WindowsAndMessaging;
-using WinRT.Interop;
 
 using Transparency.Support;
 using Transparency.ViewModels;
 using Transparency.Services;
-
-using CommunityToolkit.WinUI.Helpers;
-using System.Runtime.InteropServices;
-using Microsoft.UI.Xaml.Input;
 
 
 namespace Transparency;
@@ -66,7 +59,7 @@ public sealed partial class HistoWindow : Window
         this.InitializeComponent();
         this.Activated += MainWindow_Activated;
         Title = App.GetCurrentAssemblyName();
-        var hwnd = WindowNative.GetWindowHandle(this);
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
         Handle = new Windows.Win32.Foundation.HWND(hwnd);
         WinExStyle |= WINDOW_EX_STYLE.WS_EX_LAYERED; // We'll use WS_EX_LAYERED, not WS_EX_TRANSPARENT, for the effect.
         WinExStyle |= WINDOW_EX_STYLE.WS_EX_TOOLWINDOW; // Prevent accidental Minimize/Maximize.
@@ -173,7 +166,7 @@ public sealed partial class HistoWindow : Window
     /// </summary>
     /// <param name="window"><see cref="Microsoft.UI.Xaml.Window"/></param>
     /// <returns><see cref="Microsoft.UI.Windowing.AppWindow"/></returns>
-    Microsoft.UI.Windowing.AppWindow GetAppWindow(Microsoft.UI.Xaml.Window window) => GetAppWindowFromWindowHandle(WindowNative.GetWindowHandle(window));
+    Microsoft.UI.Windowing.AppWindow GetAppWindow(Microsoft.UI.Xaml.Window window) => GetAppWindowFromWindowHandle(WinRT.Interop.WindowNative.GetWindowHandle(window));
 
     /// <summary>
     /// Gets the <see cref="Microsoft.UI.Windowing.AppWindow"/> from an HWND.

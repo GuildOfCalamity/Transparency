@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -145,8 +144,8 @@ public partial class App : Application
         Debug.WriteLine($"[INFO] {GetCurrentFullName()} ⇒ {Formatter?.Format(DateTimeOffset.Now)}");
         
         GetLanguageRecommendedFonts();
-        TestCurrencyFormatter();
-        TestPercentFormatter();
+        //TestCurrencyFormatter();
+        //TestPercentFormatter();
     }
 
     static IServiceProvider ConfigureServices()
@@ -406,6 +405,9 @@ public partial class App : Application
             return;
 
         var fonts = new Windows.Globalization.Fonts.LanguageFontGroup(langTag);
+
+        if (fonts is null)
+            return;
 
         // The FontWeight is not the same as the FontStyle. FontStyle can be Normal, Oblique or Italic.
         // Oblique & Italic are not the same ⇒ https://en.wikipedia.org/wiki/Oblique_type

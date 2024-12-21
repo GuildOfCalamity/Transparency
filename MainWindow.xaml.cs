@@ -1,33 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using Microsoft.Extensions.DependencyInjection;
 
 using Windows.Win32;
-using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using WinRT.Interop;
+
+using CommunityToolkit.WinUI.Helpers;
 
 using Transparency.Support;
 using Transparency.ViewModels;
 using Transparency.Services;
-
-using CommunityToolkit.WinUI.Helpers;
-using System.Runtime.InteropServices;
-using Microsoft.UI.Xaml.Hosting;
-using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Transparency;
 

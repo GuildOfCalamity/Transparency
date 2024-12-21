@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -11,7 +9,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Transparency.ViewModels;
 using Transparency.Services;
-using Transparency.Support;
 
 using WinRT; // required to support Window.As<ICompositionSupportsSystemBackdrop>()
 

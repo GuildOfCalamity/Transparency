@@ -294,11 +294,11 @@
                 Style="{ThemeResource GlowSwitch}"
                 Toggled="{x:Bind ViewModel.ToggleSwitchOnToggled, Mode=OneWay}"
                 ToolTipService.ToolTip="Add application to startup at logon">
-                <!--<interact:Interaction.Behaviors>
+                <interact:Interaction.Behaviors>
                     <interactcore:EventTriggerBehavior EventName="Toggled">
                         <interactcore:InvokeCommandAction Command="{x:Bind ViewModel.OpenOnWindowsStartupCommand, Mode=OneWay}" />
                     </interactcore:EventTriggerBehavior>
-                </interact:Interaction.Behaviors>-->
+                </interact:Interaction.Behaviors>
             </ToggleSwitch>
             <!--#endregion-->
 

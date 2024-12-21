@@ -2,16 +2,20 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Windows.Foundation;
+using Windows.Storage;
+using Windows.Storage.FileProperties;
 
 
 namespace Transparency.Helpers;
 
 /// <summary>
-/// Sample configuration property class.
+/// Application configuration property class.
 /// </summary>
 public class Config
 {
@@ -82,6 +86,9 @@ public class Config
     [JsonPropertyName("background")]
     public string? background = "00FFFFFF";
 
+    [JsonInclude]
+    [JsonPropertyName("autoStart")]
+    public bool autoStart = false;
 
     public override string ToString() => JsonSerializer.Serialize<Config>(this, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
 }
@@ -416,18 +423,60 @@ public static class ConfigHelper
         return default;
     }
 
-    public static async Task<Windows.Storage.StorageFile> SaveFileAsync(this Windows.Storage.StorageFolder folder, byte[] content, string fileName, Windows.Storage.CreationCollisionOption options = Windows.Storage.CreationCollisionOption.ReplaceExisting)
+    public static async Task<Windows.Storage.StorageFile> SaveFileAsync(this Windows.Storage.StorageFolder folder, string fileName, byte[] content, Windows.Storage.CreationCollisionOption options = Windows.Storage.CreationCollisionOption.ReplaceExisting)
     {
         if (content == null)
             throw new ArgumentNullException(nameof(content));
 
         if (string.IsNullOrEmpty(fileName))
-            throw new ArgumentException("File name is null or empty. Specify a valid file name", nameof(fileName));
+            throw new ArgumentException("File name is null or empty. Specify a valid file name.", nameof(fileName));
 
         Windows.Storage.StorageFile storageFile = await folder.CreateFileAsync(fileName, options);
         await Windows.Storage.FileIO.WriteBytesAsync(storageFile, content);
         return storageFile;
     }
+
+    public static async Task<Windows.Storage.StorageFile> SaveFileAsync(this string folderPath, string fileName, byte[] content, Windows.Storage.CreationCollisionOption options = Windows.Storage.CreationCollisionOption.ReplaceExisting)
+    {
+        if (content == null)
+            throw new ArgumentNullException(nameof(content));
+
+        if (string.IsNullOrEmpty(fileName))
+            throw new ArgumentException("File name is null or empty. Specify a valid file name.", nameof(fileName));
+
+        if (string.IsNullOrEmpty(folderPath))
+            throw new ArgumentException("Folder path is null or empty. Specify a valid folder path.", nameof(folderPath));
+
+        var sf = await folderPath.GetStorageFolder();
+        Windows.Storage.StorageFile storageFile = await sf.CreateFileAsync(fileName, options);
+        await Windows.Storage.FileIO.WriteBytesAsync(storageFile, content);
+        return storageFile;
+    }
+
+    public static async Task<Windows.Storage.StorageFile> ReadPackagedAppFileAsync(string fileName = "settings.json")
+    {
+        if (string.IsNullOrEmpty(fileName))
+            throw new ArgumentException("File name is null or empty. Specify a valid file name.", nameof(fileName));
+
+        return await Windows.Storage.StorageFile.GetFileFromApplicationUriAsync(new Uri($"ms-appdata:///local/settings/{fileName}"));
+    }
+
+    public static async Task<Windows.Storage.StorageFile> GetStorageFile(this string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+            throw new ArgumentException("File name is null or empty. Specify a valid file name.", nameof(filePath));
+
+        return await Windows.Storage.StorageFile.GetFileFromPathAsync(filePath);
+    }
+
+    public static async Task<Windows.Storage.StorageFolder> GetStorageFolder(this string folderPath)
+    {
+        if (string.IsNullOrEmpty(folderPath))
+            throw new ArgumentException("Folder path is null or empty. Specify a valid folder path.", nameof(folderPath));
+
+        return await Windows.Storage.StorageFolder.GetFolderFromPathAsync(folderPath);
+    }
+
 
     public static async Task<byte[]?> ReadBytesAsync(this Windows.Storage.StorageFolder folder, string fileName)
     {
@@ -478,4 +527,49 @@ public static class ConfigHelper
     {
         return string.Concat(name, FileExtension);
     }
+
+    #region [IAsyncOps]
+    static BasicProperties? props;
+    public static IAsyncOperation<BasicProperties> GetBasicPropertiesAsync(string displayName)
+    {
+        return AsyncInfo.Run(async (cancellationToken) =>
+        {
+            async Task<BasicProperties> GetFakeBasicProperties()
+            {
+                var streamedFile = await Windows.Storage.StorageFile.CreateStreamedFileAsync(displayName, StreamedFileWriterAsync, null);
+                return await streamedFile.GetBasicPropertiesAsync();
+            }
+            return props ?? (props = await GetFakeBasicProperties());
+        });
+    }
+
+    static async void StreamedFileWriterAsync(StreamedFileDataRequest request)
+    {
+        try
+        {
+            using (var stream = request.AsStreamForWrite())
+            {
+                await stream.FlushAsync();
+            }
+            request.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ERROR] StreamedFileWriterAsync: {ex.Message}");
+            request.FailAndClose(StreamedFileFailureMode.Incomplete);
+        }
+    }
+
+    public static IAsyncAction CopyAndReplaceAsync(this IStorageFile fileToReplace)
+    {
+        return AsyncInfo.Run(async (cancelToken) =>
+        {
+            using var inStream = await fileToReplace.OpenStreamForReadAsync();
+            using var outStream = await fileToReplace.OpenStreamForWriteAsync();
+
+            await inStream.CopyToAsync(outStream);
+            await outStream.FlushAsync();
+        });
+    }
+    #endregion
 }
